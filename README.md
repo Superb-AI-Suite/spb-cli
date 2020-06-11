@@ -2,7 +2,7 @@
   <a href="http://suite-api.superb-ai.com/" target="blank"><img src="logo/cool-tree.png" width="200" height="200" alt="Cool-Tree Logo" /></a>
 </p> -->
 
-# Superb AI Command Line Interface
+# Superb AI Command Line Tool
 
 ![Build](https://github.com/Superb-AI-Suite/cool-tree/workflows/Build/badge.svg)
 ![Version](https://img.shields.io/pypi/v/spb-cli)
@@ -10,7 +10,7 @@
 <!--![Unit Test](https://github.com/Superb-AI-Suite/cool-tree/workflows/Unit%20Test/badge.svg)-->
 
 
-Official Superb AI Command Line Interface for managing data and labels on [Superb AI Suite Platform](https://suite.superb-ai.com).
+Official Superb AI Command Line Tool for managing data and labels on [Superb AI Suite Platform](https://suite.superb-ai.com).
 
 - [Installation](#Installation)
 - [Authentication](#Authentication)
