@@ -10,7 +10,7 @@
 <!--![Unit Test](https://github.com/Superb-AI-Suite/cool-tree/workflows/Unit%20Test/badge.svg)-->
 
 
-Official Superb AI Command Line Interface for managing data and labels on [Superb AI Suite Platform](https://suite.superb-ai.com).
+Official Superb AI Suite Command Line Interface for managing data and labels on [Superb AI Suite Platform](https://suite.superb-ai.com).
 
 - [Installation](#Installation)
 - [Authentication](#Authentication)
