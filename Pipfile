@@ -1,0 +1,30 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[[source]]
+url = "https://test.pypi.org/pypi/"
+verify_ssl = true
+name = "test"
+
+[dev-packages]
+pytest = "*"
+pylint = "*"
+autopep8 = "*"
+setuptools = "*"
+twine = "*"
+requests-mock = "*"
+pipenv-setup = "*"
+pexpect = "*"
+
+[packages]
+requests = "*"
+stringcase = "*"
+twine = "*"
+rich = "*"
+python-datauri = "*"
+click = "*"
+
+[requires]
+python_version = "3.7"
