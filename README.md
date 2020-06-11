@@ -4,7 +4,7 @@
 
 # Superb AI Suite Command Line Tool
 
-![Build](https://github.com/Superb-AI-Suite/cool-tree/workflows/Build/badge.svg)
+![Build](https://github.com/Superb-AI-Suite/spb-cli/workflows/Build/badge.svg)
 ![Version](https://img.shields.io/pypi/v/spb-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!--![Unit Test](https://github.com/Superb-AI-Suite/cool-tree/workflows/Unit%20Test/badge.svg)-->
