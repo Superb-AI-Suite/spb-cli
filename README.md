@@ -2,7 +2,7 @@
   <a href="http://suite-api.superb-ai.com/" target="blank"><img src="logo/cool-tree.png" width="200" height="200" alt="Cool-Tree Logo" /></a>
 </p> -->
 
-# Superb AI Command Line Tool
+# Superb AI Suite Command Line Tool
 
 ![Build](https://github.com/Superb-AI-Suite/cool-tree/workflows/Build/badge.svg)
 ![Version](https://img.shields.io/pypi/v/spb-cli)
