@@ -10,7 +10,7 @@
 <!--![Unit Test](https://github.com/Superb-AI-Suite/cool-tree/workflows/Unit%20Test/badge.svg)-->
 
 
-Official Superb AI Suite Command Line Interface for managing data and labels on [Superb AI Suite Platform](https://suite.superb-ai.com).
+Official Superb AI Suite Command Line Interface for managing data and labels on [Superb AI Suite](https://suite.superb-ai.com).
 
 - [Installation](#Installation)
 - [Authentication](#Authentication)
@@ -21,8 +21,6 @@ Official Superb AI Suite Command Line Interface for managing data and labels on 
 - [Contributing](#Contributing)
 - [License](#License)
 
-:warning: **WIP - Current version does not represent the final quality of this project. New features and improvements will be added in the near future.**
-
 ## Installation
 
 ```shell
@@ -30,7 +28,7 @@ $ pip install spb-cli
 $ spb --version
 
 0.0.xx
-```
+``` 
 Once installed, you can type `spb` command in the terminal to access the command line interface.
 
 <!---
