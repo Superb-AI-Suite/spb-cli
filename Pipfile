@@ -20,7 +20,6 @@ pexpect = "*"
 
 [packages]
 requests = "*"
-stringcase = "*"
 twine = "*"
 rich = "*"
 python-datauri = "*"

@@ -1,6 +1,7 @@
 import stringcase
 import numbers
 import inspect
+import re
 from spb.orm.type import String, ID
 
 class Query(object):
@@ -93,3 +94,9 @@ class Query(object):
     def _make_mutation(self, query_id, values, attrs):
         mutation_str = 'mutation {' + query_id + values + '{' + attrs + '}}'
         return mutation_str
+
+    def _camelcase(self, value):
+        value = re.sub(r"^[\-_\.]", '', str(value))
+        if not value:
+            return value
+        return value.lower()(value[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: value.upper()(matched.group(1)), value[1:])
