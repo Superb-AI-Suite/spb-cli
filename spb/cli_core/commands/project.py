@@ -54,7 +54,6 @@ class Project():
         console.print(f"Workspace '{directory_path}' for project '{project.name}' has been created.")
 
     def _get_projects(self, name=None, page=None, page_size=None):
-        spb.client()
         command = spb.Command(type='describe_project')
         if name is not None:
             return spb.run(command=command, option={'name':name})

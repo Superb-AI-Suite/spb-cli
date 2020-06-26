@@ -32,7 +32,7 @@ from spb.exceptions.exceptions import CommandInitiationFailedException
 
 
 __author__  = 'Super AI Dev Team'
-__version__ = '0.0.30'
+__version__ = '0.0.32'
 
 
 DEFAULT_SESSION = None
@@ -62,13 +62,14 @@ def client(**kwargs):
 
 
 def run(command: Command, option: dict = {}, page: int = None, page_size: int = None, optional: dict = {}):
-    if command is None:
-        raise CommandInitiationFailedException('Command required argument')
-    if page is not None:
-        optional['page'] = page
-    if page_size is not None:
-        optional['pageSize'] = page_size
-    return command.execute(session=DEFAULT_SESSION, option=option, optional=optional)
+    try:
+        if command is None:
+            raise CommandInitiationFailedException('Command required argument')
+        optional['page'] = page if page is not None else None
+        optional['pageSize'] = page_size if page_size is not None else None
+        return command.execute(session=DEFAULT_SESSION, option=option, optional=optional)
+    except Exception as e:
+        raise Exception(e)
 
 
 

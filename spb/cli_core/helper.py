@@ -44,14 +44,14 @@ class Helper:
     def describe_projects(self):
         self.project.describe_projects()
 
-    def upload(self, dataset_name, project, directory_path, include_label):
-        return self.label_data.upload_data(project, dataset_name, directory_path, include_label)
+    def upload(self, dataset_name, project, directory_path, include_label, is_forced):
+        return self.label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)
 
-    def upload_label(self, project, dataset_name, directory_path):
-        return self.label_data.upload_label(project, dataset_name, directory_path)
+    def upload_label(self, project, dataset_name, directory_path, is_forced):
+        return self.label_data.upload_label(project, dataset_name, directory_path, is_forced)
 
-    def download(self, project, directory_path):
-        return self.label_data.download(project, directory_path)
+    def download(self, project, directory_path, is_forced):
+        return self.label_data.download(project, directory_path, is_forced)
 
     def check_project(self, project_name):
         return self.project.check_project(project_name)

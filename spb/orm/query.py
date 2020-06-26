@@ -1,4 +1,3 @@
-import stringcase
 import numbers
 import inspect
 import re
@@ -76,9 +75,9 @@ class Query(object):
 
     def _mutation_query_id(self, model):
         if model.id is None:
-            return stringcase.camelcase('create_' + model.get_resource_name())
+            return Query._camelcase('create_' + model.get_resource_name())
         else:
-            return stringcase.camelcase('update_' + model.get_resource_name())
+            return Query._camelcase('update_' + model.get_resource_name())
 
     def _model_attrs_to_query(self, model):
         model_attrs = model.get_attr_names()
@@ -95,8 +94,9 @@ class Query(object):
         mutation_str = 'mutation {' + query_id + values + '{' + attrs + '}}'
         return mutation_str
 
-    def _camelcase(self, value):
+    @classmethod
+    def _camelcase(cls, value):
         value = re.sub(r"^[\-_\.]", '', str(value))
         if not value:
             return value
-        return value.lower()(value[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: value.upper()(matched.group(1)), value[1:])
+        return value[0].lower() + re.sub(r"[\-_\.\s]([a-z])", lambda matched: matched.group(1).upper(), value[1:])

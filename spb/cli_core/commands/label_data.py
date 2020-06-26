@@ -17,18 +17,19 @@ from spb.cli_core.utils import recursive_glob_image_files, recursive_glob_label_
 from spb.models.label import Label
 
 console = rich.console.Console()
-
+logger = logging.getLogger()
+simple_logger = logging.getLogger('simple')
 NUM_MULTI_PROCESS = 4
 LABEL_DESCRIBE_PAGE_SIZE = 10
 
 
 class LabelData():
 
-    def upload_data(self, project, dataset_name, directory_path, include_label):
-        spb.client()
+    def upload_data(self, project, dataset_name, directory_path, include_label, is_forced):
         imgs_path = recursive_glob_image_files(directory_path)
-        if not click.confirm(f"Uploading {len(imgs_path)} data and {len(recursive_glob_label_files(directory_path)) if include_label else 0 } labels to dataset '{dataset_name}' under project '{project.name}'. Proceed?"):
-                return
+        if not is_forced:
+            if not click.confirm(f"Uploading {len(imgs_path)} data and {len(recursive_glob_label_files(directory_path)) if include_label else 0 } labels to dataset '{dataset_name}' under project '{project.name}'. Proceed?"):
+                    return
         asset_images = []
         for key in imgs_path:
             file_name = key
@@ -64,10 +65,11 @@ class LabelData():
         else:
             self._print_error_table(data_results=dict(data_results[0]))
 
-    def upload_label(self, project, dataset_name, directory_path):
+    def upload_label(self, project, dataset_name, directory_path, is_forced):
         labels_path = recursive_glob_label_files(directory_path)
-        if not click.confirm(f"Uploading {len(labels_path)} labels to project '{project.name}'. Proceed?"):
-            return
+        if not is_forced:
+            if not click.confirm(f"Uploading {len(labels_path)} labels to project '{project.name}'. Proceed?"):
+                return
 
         manager = Manager()
         label_results = manager.list([manager.dict()]*len(labels_path))
@@ -78,18 +80,18 @@ class LabelData():
         success_label_count=len(labels_path)-len(label_results[0])
         console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({round(success_label_count/len(labels_path)*100,2)}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
 
-        self._print_error_table(label_results=label_results[0])
+        self._print_error_table(label_results=dict(label_results[0]))
 
-    def download(self, project, directory_path):
+    def download(self, project, directory_path, is_forced):
         command = spb.Command(type='describe_label')
         _, label_count = spb.run(command=command, option={
             'project_id' : project.id
         }, page_size = 1, page = 1)
 
         page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
-
-        if not click.confirm(f"Downloading {label_count} data and {label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
-            return
+        if not is_forced:
+            if not click.confirm(f"Downloading {label_count} data and {label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
+                return
         manager = Manager()
         results = manager.list([manager.dict()]*page_length)
         with Pool(NUM_MULTI_PROCESS) as p:
@@ -121,7 +123,6 @@ class LabelData():
                 results[key] = {}
                 results[key]['data'] = data_results[key]
                 results[key]['label'] = None
-
         if isinstance(label_results, dict):
             for key in label_results:
                 if key in results:
@@ -165,7 +166,11 @@ class LabelData():
                 key = click.getchar()
                 click.echo()
                 if key=='q' or key=='Q':
-                    return
+                    break
+        console.log(f'[b]Check the log file for more details[/b]')
+        console.log(f'- {simple_logger.handlers[0].baseFilename}')
+        console.log(f'- {logger.handlers[0].baseFilename}')
+
 
 
 def _download_worker(args):
@@ -179,11 +184,14 @@ def _download_worker(args):
         path = label.dataset + label.data_key if label.data_key.find('/') != -1 else label.dataset + "/"+label.data_key
         path = f"{directory_path}/{path}"
         os.makedirs(os.path.dirname(path), exist_ok=True)
+        label_error = None
+        data_error = None
         try:
             label_json_path = f'{path}.json'
             open(label_json_path, 'w').write(label.toJson())
         except Exception as e:
             error = {'label':str(e)}
+            label_error = error
         try:
             data_url = label.data_url
             path = f'{path}'
@@ -191,9 +199,16 @@ def _download_worker(args):
             open(path, 'wb').write(r.content)
         except:
             error.update({'data':str(e)})
+            data_error = error
 
         if len(error) > 0:
             result[f'{label.dataset}/{label.data_key}'] = error
+            if label_error:
+                _ = dict()
+                _set_error_result(f'{label.dataset}/{label.data_key}', _, str(label_error), label_error)
+            if data_error:
+                _ = dict()
+                _set_error_result(f'{label.dataset}/{label.data_key}', _, str(data_error), data_error)
 
 
 def _upload_asset(args):
@@ -204,8 +219,7 @@ def _upload_asset(args):
         command = spb.Command(type='create_data')
         spb.run(command=command, option=asset_image, optional={'projectId': project_id})
     except Exception as e:
-        logging.info(f'Failed to Upload Asset: {args}')
-        result[asset_image['data_key']] = e.message
+        _set_error_result(asset_image['data_key'], result, str(e), e)
         pass
 
 
@@ -213,7 +227,7 @@ def _update_label(args):
     [label_path, project_id, dataset, result] = args
     data_key = ".".join(label_path.split(".")[:-1])
     if not os.path.isfile(label_path):
-        result[data_key] = 'Label json file is not existed.'
+        _set_error_result(data_key, result, 'Label json file is not existed.')
         return
 
     option = {
@@ -221,14 +235,18 @@ def _update_label(args):
         'dataset': dataset,
         'data_key': data_key
     }
-    command = spb.Command(type='describe_label')
-    described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
-    described_label = described_labels[0] if described_labels and described_labels[0] else None
-    if described_label is None:
-        result[data_key] = 'Label cannot be described.'
-        return
-    if described_label.data_key != option['data_key'] and described_label.dataset != option['dataset']:
-        result[data_key] = 'Described label does not match to upload.'
+    try:
+        command = spb.Command(type='describe_label')
+        described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
+        described_label = described_labels[0] if described_labels and described_labels[0] else None
+        if described_label is None:
+            _set_error_result(data_key, result, 'Label cannot be described.')
+            return
+        if described_label.data_key != option['data_key'] and described_label.dataset != option['dataset']:
+            _set_error_result(data_key, result, 'Described label does not match to upload.')
+            return
+    except Exception as e:
+        _set_error_result(data_key, result, str(e), e)
         return
 
     label = {
@@ -248,7 +266,14 @@ def _update_label(args):
         label = spb.run(command=command, option=label)
         with open(label_path, 'w') as f:
             f.write(label.toJson())
-        result = True
     except Exception as e:
-        result[data_key] = e.message
+        _set_error_result(data_key, result, str(e), e)
 
+def _set_error_result(key, result, message, exception=None):
+    result[key] = message
+    simple_logger.error(f'{key}    {message}')
+    if exception:
+        logger.error(f'{key}    {message}')
+        logger.error(exception, exc_info=True)
+    else:
+        logger.error(f'{key}    {message}')
