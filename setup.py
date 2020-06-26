@@ -14,7 +14,7 @@ def long_description():
 setup(
     name="spb-cli",
     version=__version__,
-    url="https://github.com/Superb-AI-Suite/cool-tree.git",
+    url="https://github.com/Superb-AI-Suite/spb-cli.git",
     license="MIT",
     author="Superb AI",
     author_email="support@superb-ai.com",

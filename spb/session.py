@@ -141,45 +141,54 @@ class Session:
         return response.get('data')
 
     def execute_mutation(self, model, query):
-        data = self.execute(query)
-        if data is None:
-            return None
-        json_datas = None
-        json_datas = data[list(data.keys())[0]]
-        if json_datas is None:
-            raise APIException('Response doesnt have any data')
-        if isinstance(json_datas, list):
-            result = []
-            for json in json_datas:
-                temp = self._json_to_model(model=model, args=json)
-                result.append(temp)
-            return result
-        else:
-            return self._json_to_model(model=model, args=json_datas)
-
-    def execute_query(self, model, query):
-        data = self.execute(query)
-        if data is None:
-            return None
-        json_datas = None
-        json_datas = data[list(data.keys())[0]]
-        if json_datas is None:
-            raise APIException('Response doesnt have any data')
-        if isinstance(json_datas['edges'], list):
-            result = []
-            for json in json_datas['edges']:
-                temp = self._json_to_model(model=model, args=json)
-                result.append(temp)
-            if query.find('page') > -1 :
-                return result, json_datas['count']
-            else:
+        try:
+            data = self.execute(query)
+            if data is None:
+                return None
+            json_datas = None
+            json_datas = data[list(data.keys())[0]]
+            if json_datas is None:
+                raise APIException('Response doesnt have any data')
+            if isinstance(json_datas, list):
+                result = []
+                for json in json_datas:
+                    temp = self._json_to_model(model=model, args=json)
+                    result.append(temp)
                 return result
-        else:
-            if query.find('page') > -1 :
-                return self._json_to_model(model=model, args=json_datas), json_datas['count']
             else:
                 return self._json_to_model(model=model, args=json_datas)
+        except Exception as e:
+            raise Exception(e)
+
+    def execute_query(self, model, query):
+        try:
+            data = self.execute(query)
+            if data is None:
+                return None
+            json_datas = None
+            json_datas = data[list(data.keys())[0]]
+            if json_datas is None:
+                raise APIException('Response doesnt have any data')
+            if isinstance(json_datas['edges'], list):
+                result = []
+                for json in json_datas['edges']:
+                    temp = self._json_to_model(model=model, args=json)
+                    result.append(temp)
+                if query.find('page') > -1 :
+                    return result, json_datas['count']
+                else:
+                    return result
+            else:
+                if query.find('page') > -1 :
+                    return self._json_to_model(model=model, args=json_datas), json_datas['count']
+                else:
+                    return self._json_to_model(model=model, args=json_datas)
+        except Exception as e:
+            raise Exception(e)
 
 
     def _json_to_model(self, model, args):
-        return model.res_to_model(args)
+        try:
+            return model.res_to_model(args)
+        except Exception as e:
+            raise Exception(e)

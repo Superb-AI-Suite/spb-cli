@@ -23,6 +23,6 @@ jobs:
     - name: Install dependencies
       run: |
         pipenv install --dev --system
-    - name: Unit test with pytest
-      run: |
-        python -m pytest ./tests/unit/
+    # - name: Unit test with pytest
+    #   run: |
+    #     python -m pytest ./tests/unit/

@@ -21,16 +21,22 @@ class Manager(object):  # pylint: disable=R0205
 
     def query(self, options, optional):
         '''Convert model to graphql query string'''
-        model = self._get_model_object(options)
-        query = Query.get(model, optional)
-        return self.session.execute_query(self.model, query)
+        try:
+            model = self._get_model_object(options)
+            query = Query.get(model, optional)
+            return self.session.execute_query(self.model, query)
+        except Exception as e:
+            raise Exception(e)
 
     def mutation(self, options, optional={}):
-        '''Convert model to graphql mutation string'''
-        query = None
-        model = self._get_model_object(options)
-        query = Query.mutation(model, optional)
-        return self.session.execute_mutation(self.model, query)
+        '''"Convert model to graphql mutation string'''
+        try:
+            query = None
+            model = self._get_model_object(options)
+            query = Query.mutation(model, optional)
+            return self.session.execute_mutation(self.model, query)
+        except Exception as e:
+            raise Exception(e)
 
     def get_query(self, options, optional):
         model = self._get_model_object(options)

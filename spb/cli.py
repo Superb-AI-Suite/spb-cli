@@ -11,6 +11,7 @@ from spb.session import Session
 console = rich.console.Console()
 helper = Helper()
 
+spb.client()
 @click.group()
 @click.version_option(version=spb.__version__, message='%(version)s')
 def cli():
@@ -19,8 +20,8 @@ def cli():
 
 @cli.command()
 # @click.option('--profile_name', prompt='Profile Name', default='default')]
-@click.option('--account_name', required=False)
-@click.option('--access_key', required=False)
+@click.option('-n', '--account_name', required=False)
+@click.option('-k', '--access_key', required=False)
 @click.option('-l', '--list', 'list_flag', is_flag=True)
 def configure(account_name, access_key, list_flag):
     profile_name = 'default'
@@ -47,11 +48,12 @@ def upload():
     pass
 
 @upload.command()
-@click.option('--name', 'name', help='Target dataset name')
-@click.option('--project', 'project_name', help='Target project name')
-@click.option('--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
-@click.option('--include-label', 'include_label', default=False, is_flag=True, help='Upload your pre-labels to the project')
-def dataset(name, project_name, directory_path, include_label):
+@click.option('-n', '--name', 'name', help='Target dataset name')
+@click.option('-p', '--project', 'project_name', help='Target project name')
+@click.option('-d', '--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
+@click.option('-l', '--include-label', 'include_label', default=False, is_flag=True, help='Upload your pre-labels to the project')
+@click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
+def dataset(name, project_name, directory_path, include_label, is_forced):
     project = _get_project_with_name(project_name)
     if not project:
         return
@@ -66,13 +68,14 @@ def dataset(name, project_name, directory_path, include_label):
         if not name:
             return
 
-    helper.upload(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label)
+    helper.upload(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
 
 @upload.command()
-@click.option('--project', 'project_name', help='Target project name')
-@click.option('--name', 'dataset_name', help='Target dataset name')
-@click.option('--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
-def labels(project_name, dataset_name, directory_path):
+@click.option('-p', '--project', 'project_name', help='Target project name')
+@click.option('-n', '--name', 'dataset_name', help='Target dataset name')
+@click.option('-d', '--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
+@click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
+def labels(project_name, dataset_name, directory_path, is_forced):
     project = _get_project_with_name(project_name)
     if not project:
         return
@@ -85,18 +88,19 @@ def labels(project_name, dataset_name, directory_path):
                 break
         if not dataset_name:
             return
-    helper.upload_label(project, dataset_name, directory_path)
+    helper.upload_label(project, dataset_name, directory_path, is_forced=is_forced)
 
 
 
 @cli.command()
-@click.option('--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
-@click.option('--project', 'project_name', help='Target project name')
-def download(project_name, directory_path):
+@click.option('-d', '--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
+@click.option('-p', '--project', 'project_name', help='Target project name')
+@click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
+def download(project_name, directory_path, is_forced):
     project = _get_project_with_name(project_name)
     if not project:
         return
-    helper.download(project, directory_path)
+    helper.download(project, directory_path, is_forced=is_forced)
 
 
 @cli.command()
