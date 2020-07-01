@@ -3,14 +3,17 @@ from spb.orm.type import Type
 from spb.orm import Model
 from spb.orm import AttributeModel
 from spb.orm import ListAttribute
-from spb.orm.type import String, ID, Number, Object, JsonObject
+from spb.orm.type import String, ID, Number, Object, JsonObject, List
 
 
-class Stats(AttributeModel, ListAttribute):
+class Stats(ListAttribute):
     def __init__(self, *args, **kwargs):
         self.name = kwargs['name'] if 'name' in kwargs else None
         self.count = kwargs['count'] if 'count' in kwargs else None
 
+class Tags(ListAttribute):
+    def __init__(self, *args, **kwargs):
+        self.tags = [tag for tag in kwargs['tags']] if 'tags' in kwargs else None
 
 class Label(Model):
     MODEL_UUID = '16be2af8-958b-11ea-bb37-0242ac130002'

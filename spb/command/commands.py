@@ -55,7 +55,8 @@ class DescribeCommand(BaseCommand):
     def execute(self, session=None, option=None, optional=None):
         try:
             DescribeModel = self._loader.get_model(self.res_name)
-            return DescribeModel.manager().query(option, optional)
+            model = DescribeModel()
+            return model.manager().query(option, optional)
         except Exception as e:
             raise Exception(e)
 
@@ -68,7 +69,8 @@ class CreateCommand(BaseCommand):
     def execute(self, session=None, option=None, optional=None):
         try:
             CreateModel = self._loader.get_model(self.res_name)
-            return CreateModel.manager().mutation(option, optional)
+            model = CreateModel()
+            return model.manager().mutation(option, optional)
         except Exception as e:
             raise Exception(e)
 
@@ -90,6 +92,7 @@ class UpdateCommand(BaseCommand):
     def execute(self, session=None, option=None, optional=None):
         try:
             UpdateModel = self._loader.get_model(self.res_name)
-            return UpdateModel.manager().mutation(option, optional)
+            model = UpdateModel()
+            return model.manager().mutation(option, optional)
         except Exception as e:
             raise Exception(e)

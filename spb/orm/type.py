@@ -165,6 +165,18 @@ class Boolean(Type):
         query[name] = value
         return query
 
+class List(Type):
+    def _validation(self, value):
+        if self._immutable:
+            raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
+        if value is not None and not type(value) == list:
+            raise AttribureTypeException(f"'{self.attr_name}' need list type value")
+        return value
+    @classmethod
+    def _type_to_query(cls, name, value):
+        query= {}
+        query[name] = value.replace("'", '"')
+        return query
 
 class Object(Type):
     @classmethod

@@ -133,10 +133,9 @@ class Model(AttributeContainer, metaclass=ModelMeta):  # pylint: disable=R0205
     def get_resource_name(self):
         return self.RESOURCE_NAME
 
-    @classmethod
-    def manager(cls, type_check=True):
+    def manager(self, type_check=True):
         ''' Create a database managet '''
-        return Manager(cls, type_check)
+        return Manager(self, type_check)
 
     @classmethod
     def get_attr_names(cls):
@@ -165,5 +164,5 @@ class AttributeModel:
             attrs_dict[attr] = value_string
         return attrs_dict
 
-class ListAttribute:
+class ListAttribute(AttributeModel):
     pass
