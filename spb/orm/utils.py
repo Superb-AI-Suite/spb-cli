@@ -27,8 +27,5 @@ def is_data_url(value):
     return pattern.match(value)
 
 def is_url(value):
-    try:
-        urlparse(value)
-        return True
-    except:
-        return False
+    pattern = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    return pattern.match(value)

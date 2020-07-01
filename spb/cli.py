@@ -11,7 +11,7 @@ from spb.session import Session
 console = rich.console.Console()
 helper = Helper()
 
-spb.client()
+
 @click.group()
 @click.version_option(version=spb.__version__, message='%(version)s')
 def cli():
@@ -37,6 +37,8 @@ def configure(account_name, access_key, list_flag):
 
 @cli.group()
 def describe():
+    _initiation_cli()
+    spb.client()
     pass
 
 @describe.command()
@@ -45,6 +47,7 @@ def projects():
 
 @cli.group()
 def upload():
+    _initiation_cli()
     pass
 
 @upload.command()
@@ -97,6 +100,7 @@ def labels(project_name, dataset_name, directory_path, is_forced):
 @click.option('-p', '--project', 'project_name', help='Target project name')
 @click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
 def download(project_name, directory_path, is_forced):
+    _initiation_cli()
     project = _get_project_with_name(project_name)
     if not project:
         return
@@ -119,3 +123,6 @@ def _get_project_with_name(project_name):
         else:
             break
     return project
+
+def _initiation_cli():
+    spb.client()

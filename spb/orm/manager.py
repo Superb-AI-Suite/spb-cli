@@ -2,7 +2,7 @@ import spb
 
 from .utils import *
 from .query import Query
-
+from spb.exceptions.exceptions import ModelInitiationFailedException
 
 class Manager(object):  # pylint: disable=R0205
     ''' Data mapper interface (generic repository) for models '''
@@ -13,13 +13,21 @@ class Manager(object):  # pylint: disable=R0205
         self.session = spb._get_default_session()
 
     def _get_model_object(self, options):
-        optionUUID = options.MODEL_UUID if hasattr(options, 'MODEL_UUID') else False
-        if optionUUID and optionUUID == self.model.MODEL_UUID:
-            return options
-        else:
-            return self.model(options)
+        try:
+            model = None
+            if options == None:
+                model = self.model
+            optionUUID = options.MODEL_UUID if hasattr(options, 'MODEL_UUID') else False
+            if optionUUID and optionUUID == self.model.MODEL_UUID:
+                model = options
+            if isinstance(options, dict):
+                model = self.model.__class__(options)
+            if model == None : raise ModelInitiationFailedException
+            return model
+        except Exception as e:
+            raise Exception(e)
 
-    def query(self, options, optional):
+    def query(self, options=None, optional={}):
         '''Convert model to graphql query string'''
         try:
             model = self._get_model_object(options)
@@ -28,7 +36,7 @@ class Manager(object):  # pylint: disable=R0205
         except Exception as e:
             raise Exception(e)
 
-    def mutation(self, options, optional={}):
+    def mutation(self, options=None, optional={}):
         '''"Convert model to graphql mutation string'''
         try:
             query = None
@@ -38,11 +46,11 @@ class Manager(object):  # pylint: disable=R0205
         except Exception as e:
             raise Exception(e)
 
-    def get_query(self, options, optional):
+    def get_query(self, options=None, optional={}):
         model = self._get_model_object(options)
         return Query.get(model, optional)
 
-    def get_mutation(self, options, optional):
+    def get_mutation(self, options=None, optional={}):
         model = self._get_model_object(options)
         return Query.mutation(model, optional)
 
