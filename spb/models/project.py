@@ -3,7 +3,7 @@ import json
 from spb.orm.type import Type
 from spb.orm import Model
 from spb.orm import AttributeModel
-from spb.orm.type import String, ID, Number, Object
+from spb.orm.type import String, ID, Number, Object, JsonObject
 
 class Class(AttributeModel):
     def __init__(self, *args, **kwargs ):
@@ -77,3 +77,4 @@ class Project(Model):
     progress = Number(property_name='progress')
     # configure = Type(property_name='configure', express=Configure)
     summary = Object(property_name='configure', express=ProjectSummary)
+    label_interface = JsonObject(property_name='labelInterface')
