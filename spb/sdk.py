@@ -24,6 +24,7 @@ import spb
 import math
 import time
 import urllib
+import skimage.io
 
 
 __author__ = spb.__author__
@@ -182,12 +183,6 @@ class DataHandle(object):
         return urllib.request.urlretrieve(self._data.data_url, download_to)
 
     def get_numpy_image(self):
-        try:
-            import skimage.io
-        except:
-            print('[WARNING] Requires scikit-image library. None returned')
-            return None
-
         if self._is_expired_image_url():
             print('[WARNING] None returned')
             return None

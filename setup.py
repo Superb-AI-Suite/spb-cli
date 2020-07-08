@@ -58,6 +58,7 @@ setup(
         "urllib3==1.25.9",
         "webencodings==0.5.1",
         "zipp==3.1.0",
+        "scikit-image>=0.16.1",
     ],
     zip_safe=False,
     dependency_links=[],
