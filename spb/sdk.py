@@ -71,9 +71,10 @@ class Client(object):
     # Simple SDK functions
     ##############################
 
-    def get_num_data(self):
+    def get_num_data(self, **kwargs):
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id}
+        option = {'project_id': self._project.id, **kwargs}
+        print(option)
         _, num_data = spb.run(command=command, option=option, page=1, page_size=1)
 
         if num_data == 0:
@@ -81,22 +82,22 @@ class Client(object):
 
         return num_data
 
-    def get_data(self, data_idx, num_data=None):
+    def get_data(self, data_idx, num_data=None, **kwargs):
         if num_data is None:
-            num_data = self.get_num_data()
+            num_data = self.get_num_data(**kwargs)
 
         if data_idx >= num_data:
             print('[WARNING] Index out of bounds. None returned')
             return None
 
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id}
+        option = {'project_id': self._project.id, **kwargs}
         data, _ = spb.run(command=command, option=option, page=data_idx+1, page_size=1)
         return DataHandle(data[0], self._project)
 
-    def get_data_page(self, page_idx, page_size=10, num_data=None):
+    def get_data_page(self, page_idx, page_size=10, num_data=None, **kwargs):
         if num_data is None:
-            num_data = self.get_num_data()
+            num_data = self.get_num_data(**kwargs)
 
         num_pages = math.ceil(float(num_data) / page_size)
         if page_idx >= num_pages:
@@ -104,14 +105,14 @@ class Client(object):
             return []
 
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id}
+        option = {'project_id': self._project.id, **kwargs}
         data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
         for data in data_page:
             yield DataHandle(data, self._project)
 
-    def get_data_all(self, page_size=10, num_data=None):
+    def get_data_all(self, page_size=10, num_data=None, **kwargs):
         if num_data is None:
-            num_data = self.get_num_data()
+            num_data = self.get_num_data(**kwargs)
 
         if num_data == 0:
             return []
@@ -119,7 +120,7 @@ class Client(object):
         num_pages = math.ceil(float(num_data) / page_size)
         data_all = []
         for page_idx in range(num_pages):
-            for data in self.get_data_page(page_idx, page_size, num_data):
+            for data in self.get_data_page(page_idx, page_size, num_data, **kwargs):
                 yield data
 
 
