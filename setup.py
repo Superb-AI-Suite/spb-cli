@@ -59,6 +59,7 @@ setup(
         "webencodings==0.5.1",
         "zipp==3.1.0",
         "scikit-image>=0.16.1",
+        "boto3>=1.12.0",
     ],
     zip_safe=False,
     dependency_links=[],
