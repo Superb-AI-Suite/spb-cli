@@ -37,7 +37,7 @@ setup(
         "click==7.1.2",
         "colorama==0.4.3",
         "commonmark==0.9.1",
-        "docutils==0.16",
+        "docutils<0.16,>=0.10",
         "idna==2.9",
         "importlib-metadata==1.6.1; python_version < '3.8'",
         "keyring==21.2.1",
