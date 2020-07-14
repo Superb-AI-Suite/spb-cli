@@ -1,7 +1,7 @@
 import numbers
 import inspect
 import re
-from spb.orm.type import String, ID
+from .type_base import Type
 
 class Query(object):
 
@@ -30,7 +30,7 @@ class Query(object):
         attrs = model.get_attr_names().keys()
         mutable_attrs = [attr for attr in attrs if attr not in immutable_attrs]
         for key, value in model._attrs.items():
-            if isinstance(value, ID) and not key in mutable_attrs:
+            if isinstance(value, Type) and repr(value) == 'ID' and not key in mutable_attrs:
                 mutable_attrs.append(key)
         return query._params(mode='MUTATION', model=model, used_attrs=mutable_attrs, optional=optional)
 

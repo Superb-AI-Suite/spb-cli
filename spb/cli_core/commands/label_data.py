@@ -252,8 +252,7 @@ def _update_label(args):
     label = {
         "id": described_label.id,
         "project_id": project_id,
-        "data_key": described_label.data_key,
-        "dataset": dataset,
+        "tags": described_label.tags,
         "result": described_label.result,
     }
     try:
@@ -261,7 +260,12 @@ def _update_label(args):
             json_data = json.load(json_file)
         if json_data['result'] is None:
             return
-        label['result'] = json_data['result']
+
+        if 'result' in json_data:
+            label['result'] = json_data['result']
+        if 'tags' in json_data:
+            label['tags'] = json_data['tags']
+
         command = spb.Command(type='update_label')
         label = spb.run(command=command, option=label)
         with open(label_path, 'w') as f:

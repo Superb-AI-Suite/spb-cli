@@ -131,9 +131,6 @@ dmypy.json
 # Intellij
 .idea
 
-# vscode
-.vscode
-
 #except logs
 logs/
 
@@ -142,3 +139,9 @@ wget-log*
 
 # MacOS DS_STORE
 **/.DS_Store
+
+# vscode
+.vscode/
+
+# notebooks
+**/*.ipynb

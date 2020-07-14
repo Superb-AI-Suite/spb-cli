@@ -1,5 +1,5 @@
 # from spb.orm.model import Model
-# from spb.orm.type import Type
+# from spb.orm.type_base import Type
 
 
 # class DumbModel(Model):
