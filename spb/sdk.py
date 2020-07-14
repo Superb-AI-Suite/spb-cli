@@ -24,7 +24,9 @@ import spb
 import math
 import time
 import urllib
+import os, random
 import skimage.io
+import boto3
 
 
 __author__ = spb.__author__
@@ -39,10 +41,11 @@ class Client(object):
 
         if project_name is None:
             print('[WARNING] Specify the name of a project to be accessed')
-            print('Usage: client = Client(project_name=\"<your_project_name>\")')
+            print('[INFO] Usage: client = Client(project_name=\"<your_project_name>\")')
             return
 
         self._project = Client._get_project(project_name)
+        self._s3 = boto3.client('s3')
 
     ##############################
     # Immutable variables
@@ -74,7 +77,6 @@ class Client(object):
     def get_num_data(self, **kwargs):
         command = spb.Command(type='describe_label')
         option = {'project_id': self._project.id, **kwargs}
-        print(option)
         _, num_data = spb.run(command=command, option=option, page=1, page_size=1)
 
         if num_data == 0:
@@ -123,6 +125,42 @@ class Client(object):
             for data in self.get_data_page(page_idx, page_size, num_data, **kwargs):
                 yield data
 
+    def upload_image(self, path, dataset_name, key=None, name=None):
+        if not os.path.isfile(path):
+            print('[WARNING] Invalid path. Upload failed')
+            return
+
+        if name is None:
+            name = path.split('/')[-1]
+
+        if key is None:
+            key = name
+
+        command = spb.Command(type='create_data')
+        option = {'file': path, 'file_name': name, 'dataset': dataset_name, 'data_key': key}
+
+        try:
+            spb.run(command=command, optional={'projectId': self._project.id}, option=option)
+
+        except Exception as e:
+            print('[WARNING] Duplicate data key. Upload failed')
+
+    def upload_image_s3(self, bucket_name, path, dataset_name, key=None):
+        name = path.split('/')[-1]
+        ext = path.split('.')[-1]
+        temp_path = '{:032x}.{}'.format(random.getrandbits(128), ext)
+
+        try:
+            self._s3.download_file(bucket_name, path, temp_path)
+            self.upload_image(temp_path, dataset_name, key, name=name)
+
+        except Exception as e:
+            print('[WARNING] Cannot access S3 path. Check your access permission. Upload failed')
+
+        finally:
+            if os.path.isfile(temp_path):
+                os.remove(temp_path)
+
 
 class DataHandle(object):
     _IMAGE_URL_LIFETIME_IN_SECONDS = 3600
@@ -163,7 +201,6 @@ class DataHandle(object):
 
     def get_image_url(self):
         if self._is_expired_image_url():
-            print('[WARNING] None returned')
             return None
 
         return self._data.data_url
@@ -174,18 +211,16 @@ class DataHandle(object):
 
     def download_image(self, download_to=None):
         if self._is_expired_image_url():
-            print('[WARNING] None returned')
             return None, None
 
         if download_to is None:
             download_to = self._data.data_key
-            print('[WARNING] Downloaded to {}'.format(download_to))
+            print('[INFO] Downloaded to {}'.format(download_to))
 
         return urllib.request.urlretrieve(self._data.data_url, download_to)
 
-    def get_numpy_image(self):
+    def get_image(self):
         if self._is_expired_image_url():
-            print('[WARNING] None returned')
             return None
 
         return skimage.io.imread(self._data.data_url)
