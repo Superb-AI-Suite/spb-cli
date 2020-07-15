@@ -30,7 +30,7 @@ class Label(Model):
     stats = Object(property_name='stats', immutable=True, express=Stats)
 
     # For assets
-    data_id = ID(property_name='dataId')
+    data_id = ID(property_name='dataId', immutable=True)
     dataset = String(property_name='dataset', immutable=True, filterable=True)
     data_key = String(property_name='dataKey', immutable=True, filterable=True)
     data_url = String(property_name='dataUrl', immutable=True)
