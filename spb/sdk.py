@@ -74,9 +74,10 @@ class Client(object):
     # Simple SDK functions
     ##############################
 
-    def get_num_data(self, **kwargs):
+    def get_num_data(self, tags=[], **kwargs):
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id, **kwargs}
+        tags = [{'name': tag} for tag in tags]
+        option = {'project_id': self._project.id, 'tags': tags, **kwargs}
         _, num_data = spb.run(command=command, option=option, page=1, page_size=1)
 
         if num_data == 0:
@@ -84,22 +85,23 @@ class Client(object):
 
         return num_data
 
-    def get_data(self, data_idx, num_data=None, **kwargs):
+    def get_data(self, data_idx, num_data=None, tags=[], **kwargs):
         if num_data is None:
-            num_data = self.get_num_data(**kwargs)
+            num_data = self.get_num_data(tags=tags, **kwargs)
 
         if data_idx >= num_data:
             print('[WARNING] Index out of bounds. None returned')
             return None
 
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id, **kwargs}
+        tags = [{'name': tag} for tag in tags]
+        option = {'project_id': self._project.id, 'tags': tags, **kwargs}
         data, _ = spb.run(command=command, option=option, page=data_idx+1, page_size=1)
         return DataHandle(data[0], self._project)
 
-    def get_data_page(self, page_idx, page_size=10, num_data=None, **kwargs):
+    def get_data_page(self, page_idx, page_size=10, num_data=None, tags=[], **kwargs):
         if num_data is None:
-            num_data = self.get_num_data(**kwargs)
+            num_data = self.get_num_data(tags=tags, **kwargs)
 
         num_pages = math.ceil(float(num_data) / page_size)
         if page_idx >= num_pages:
@@ -107,7 +109,8 @@ class Client(object):
             return []
 
         command = spb.Command(type='describe_label')
-        option = {'project_id': self._project.id, **kwargs}
+        tags = [{'name': tag} for tag in tags]
+        option = {'project_id': self._project.id, 'tags': tags, **kwargs}
         data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
         for data in data_page:
             yield DataHandle(data, self._project)
@@ -245,6 +248,9 @@ class DataHandle(object):
             labels = []
 
         return labels
+
+    def get_tags(self):
+        return [tag.name for tag in self._data.tags]
 
     def set_category_labels(self, labels):
         category_map = self._project.label_interface['categorization']['word_map']
