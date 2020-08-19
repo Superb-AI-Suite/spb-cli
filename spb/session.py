@@ -158,7 +158,7 @@ class Session:
             else:
                 return self._json_to_model(model=model, args=json_datas)
         except Exception as e:
-            raise Exception(e)
+            raise Exception(e.message)
 
     def execute_query(self, model, query):
         try:
@@ -184,7 +184,7 @@ class Session:
                 else:
                     return self._json_to_model(model=model, args=json_datas)
         except Exception as e:
-            raise Exception(e)
+            raise Exception(e.message)
 
 
     def _json_to_model(self, model, args):
