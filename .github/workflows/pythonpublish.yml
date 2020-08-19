@@ -19,6 +19,9 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+    - name: Install chardet dependency
+      run: |
+        pip3 install chardet
     - name: Install dependencies
       run: |
         sudo apt-get install libdbus-glib-1-dev python-dbus
