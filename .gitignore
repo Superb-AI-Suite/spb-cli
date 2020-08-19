@@ -145,3 +145,6 @@ wget-log*
 
 # notebooks
 **/*.ipynb
+
+# workspace
+workspace/
