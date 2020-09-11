@@ -31,36 +31,44 @@ class LabelData():
             if not click.confirm(f"Uploading {len(imgs_path)} data and {len(recursive_glob_label_files(directory_path)) if include_label else 0 } labels to dataset '{dataset_name}' under project '{project.name}'. Proceed?"):
                     return
         asset_images = []
-        for key in imgs_path:
-            file_name = key
-            asset_image = {
-                'file': imgs_path[key],
-                'file_name': file_name,
-                'data_key': key,
-                'dataset': dataset_name
-            }
-            asset_images.append(asset_image)
         manager = Manager()
-        data_results = manager.list([manager.dict()]*len(asset_images))
-        console.print(f"Uploading data:")
-        with Pool(NUM_MULTI_PROCESS) as p:
-            list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
+        if len(imgs_path) != 0:
+            for key in imgs_path:
+                file_name = key
+                asset_image = {
+                    'file': imgs_path[key],
+                    'file_name': file_name,
+                    'data_key': key,
+                    'dataset': dataset_name
+                }
+                asset_images.append(asset_image)
+            data_results = manager.list([manager.dict()]*len(asset_images))
+            console.print(f"Uploading data:")
+            with Pool(NUM_MULTI_PROCESS) as p:
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
+        else:
+            data_results = [{}]
 
         label_results = None
         if include_label:
             labels_path = recursive_glob_label_files(directory_path)
             console.print(f"Uploading labels:")
-            label_results = manager.list([manager.dict()]*len(labels_path))
-            with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+            if len(labels_path) != 0:
+                label_results = manager.list([manager.dict()]*len(labels_path))
+                with Pool(NUM_MULTI_PROCESS) as p:
+                    list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+            else:
+                label_results = [{}]
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
         success_data_count = len(asset_images) - len(data_results[0])
-        console.print(f'Successful upload of {success_data_count} out of {len(asset_images)} data. ({round(success_data_count/len(asset_images)*100,2)}%) - [b red]{len(data_results[0])} ERRORS[/b red]')
+        data_success_ratio = round(success_data_count/len(asset_images)*100,2) if len(data_results[0]) != 0 else 100
+        console.print(f'Successful upload of {success_data_count} out of {len(asset_images)} data. ({data_success_ratio}%) - [b red]{len(data_results[0])} ERRORS[/b red]')
 
         if include_label:
             success_label_count=len(labels_path)-len(label_results[0])
-            console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({round(success_label_count/len(labels_path)*100,2)}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
+            label_success_ratio = round(success_label_count/len(labels_path)*100,2) if len(label_results[0]) != 0 else 100
+            console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({label_success_ratio}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
             self._print_error_table(dict(data_results[0]), dict(label_results[0]))
         else:
             self._print_error_table(data_results=dict(data_results[0]))
@@ -70,15 +78,18 @@ class LabelData():
         if not is_forced:
             if not click.confirm(f"Uploading {len(labels_path)} labels to project '{project.name}'. Proceed?"):
                 return
-
-        manager = Manager()
-        label_results = manager.list([manager.dict()]*len(labels_path))
-        with Pool(NUM_MULTI_PROCESS) as p:
-            list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+        if len(labels_path) != 0:
+            manager = Manager()
+            label_results = manager.list([manager.dict()]*len(labels_path))
+            with Pool(NUM_MULTI_PROCESS) as p:
+                list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+        else:
+            label_results = [{}]
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
         success_label_count=len(labels_path)-len(label_results[0])
-        console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({round(success_label_count/len(labels_path)*100,2)}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
+        success_label_ratio = round(success_label_count/len(labels_path)*100,2) if len(labels_path) != 0 else 100
+        console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({success_label_ratio}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
 
         self._print_error_table(label_results=dict(label_results[0]))
 
@@ -87,25 +98,28 @@ class LabelData():
         _, label_count = spb.run(command=command, option={
             'project_id' : project.id
         }, page_size = 1, page = 1)
+        if label_count != 0:
+            page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
+            if not is_forced:
+                if not click.confirm(f"Downloading {label_count} data and {label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
+                    return
+            manager = Manager()
+            results = manager.list([manager.dict()]*page_length)
+            with Pool(NUM_MULTI_PROCESS) as p:
+                list(tqdm.tqdm(p.imap(_download_worker, zip([project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
 
-        page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
-        if not is_forced:
-            if not click.confirm(f"Downloading {label_count} data and {label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
-                return
-        manager = Manager()
-        results = manager.list([manager.dict()]*page_length)
-        with Pool(NUM_MULTI_PROCESS) as p:
-            list(tqdm.tqdm(p.imap(_download_worker, zip([project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
-
-        results = results[0]
-        data_results = {}
-        label_results = {}
-        if len(results) > 0:
-            for key in results.keys():
-                if 'data' in results[key]:
-                    data_results[key] = results[key]['data']
-                if 'label' in results[key]:
-                    label_results[key] = results[key]['label']
+            results = results[0]
+            data_results = {}
+            label_results = {}
+            if len(results) > 0:
+                for key in results.keys():
+                    if 'data' in results[key]:
+                        data_results[key] = results[key]['data']
+                    if 'label' in results[key]:
+                        label_results[key] = results[key]['label']
+        else:
+            label_results = {}
+            data_results = {}
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
         label_success_count = label_count - len(label_results)
