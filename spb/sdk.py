@@ -143,7 +143,7 @@ class Client(object):
         option = {'file': path, 'file_name': name, 'dataset': dataset_name, 'data_key': key}
 
         try:
-            spb.run(command=command, optional={'projectId': self._project.id}, option=option)
+            return spb.run(command=command, optional={'projectId': self._project.id}, option=option)
 
         except Exception as e:
             print('[WARNING] Duplicate data key. Upload failed')
@@ -155,7 +155,7 @@ class Client(object):
 
         try:
             self._s3.download_file(bucket_name, path, temp_path)
-            self.upload_image(temp_path, dataset_name, key, name=name)
+            return self.upload_image(temp_path, dataset_name, key, name=name)
 
         except Exception as e:
             print('[WARNING] Cannot access S3 path. Check your access permission. Upload failed')
