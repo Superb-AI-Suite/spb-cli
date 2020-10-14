@@ -262,11 +262,11 @@ def _update_label(args):
     except Exception as e:
         _set_error_result(data_key, result, str(e), e)
         return
-
+    
     label = {
         "id": described_label.id,
         "project_id": project_id,
-        "tags": described_label.tags,
+        "tags": [tag.get_datas(tag) for tag in described_label.tags],
         "result": described_label.result,
     }
     try:
@@ -279,7 +279,6 @@ def _update_label(args):
             label['result'] = json_data['result']
         if 'tags' in json_data:
             label['tags'] = json_data['tags']
-
         command = spb.Command(type='update_label')
         label = spb.run(command=command, option=label)
         with open(label_path, 'w') as f:
