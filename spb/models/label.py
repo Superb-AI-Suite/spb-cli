@@ -26,7 +26,7 @@ class Label(Model):
     tags = Object(property_name='tags', express=Tags, filterable=True)
 
     # basic info
-    status = String(property_name='status', immutable=True)
+    status = String(property_name='status', immutable=True, filterable=True)
     stats = Object(property_name='stats', immutable=True, express=Stats)
 
     # For assets
