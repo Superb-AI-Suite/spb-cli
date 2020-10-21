@@ -14,10 +14,10 @@ class Helper:
     label_data = LabelData()
 
     def set_config(self, profile_name, account_name, access_key):
-        credential_path = os.path.expanduser('~') + '/.spb/config'
-        credential_path = credential_path.replace(os.sep, '/')
+        credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
+        credential_dir = (os.sep).join(credential_path.split(os.sep)[:-1])
 
-        os.makedirs('/'.join(credential_path.split(os.sep)[:-1]), exist_ok=True)
+        os.makedirs(credential_dir, exist_ok=True)
 
         config_parser = configparser.ConfigParser()
         config_parser.read(credential_path)
@@ -32,8 +32,7 @@ class Helper:
         console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with account name '{account_name}'.")
 
     def list_config(self, profile_name):
-        credential_path = os.path.expanduser('~') + '/.spb/config'
-        credential_path = credential_path.replace(os.sep, '/')
+        credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
 
         with open(credential_path, 'r') as f:
             print(f.read())

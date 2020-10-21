@@ -22,7 +22,7 @@ class LoggerConfig():
 
 def _file_log_handler(config):
     today = date.today()
-    logpath = os.path.dirname(__file__) + f'/logs/{today.strftime("%Y%m%d")}.{config.filename}'
+    logpath = os.path.join(os.path.dirname(__file__), 'logs', f'{today.strftime("%Y%m%d")}.{config.filename}')
     logdir = os.path.dirname(logpath)
     if not os.path.exists(logdir):
         os.makedirs(logdir)

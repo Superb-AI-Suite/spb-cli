@@ -76,9 +76,9 @@ class Loader(object):
         return self.models[res_model]
 
     def load_model(self):
-        BASE_DIR = "/".join(os.path.dirname(os.path.abspath(__file__)
-                                            ).replace(os.sep, '/').split('/')[0:-1])+'/models/'
-        file_list = glob.glob(BASE_DIR + '*.py')
+        BASE_BASE_DIR = (os.sep).join(os.path.dirname(os.path.abspath(__file__)).split(os.sep)[:-1])
+        BASE_DIR = os.path.join(BASE_BASE_DIR, 'models')
+        file_list = glob.glob(os.path.join(BASE_DIR, '*.py'))
         for module in file_list:
             if module.find('__init__') == -1:
                 # module_file = os.path.join(BASE_DIR, module)
