@@ -28,8 +28,7 @@ class Session:
             profile = 'default'
 
         if profile and not account_name and not access_key:
-            credential_path = os.path.expanduser('~') + '/.spb/config'
-            credential_path = credential_path.replace(os.sep, '/')
+            credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
 
             # check exists credentials
             assert os.path.exists(credential_path), SDKInitiationFailedException(
