@@ -56,5 +56,5 @@ def recursive_glob_label_files(input_path):
 
 def extract_file_key(input_folder_path, file_path):
     key = os.path.abspath(file_path).replace(os.path.abspath(input_folder_path), "")
-    key = "/".join(key.split("/")[1:])
+    key = "/".join(key.split(os.sep)[1:])
     return key
