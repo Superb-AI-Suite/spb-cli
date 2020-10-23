@@ -195,7 +195,7 @@ def _download_worker(args):
     }, page_size = LABEL_DESCRIBE_PAGE_SIZE, page = page_idx + 1)
     for label in labels:
         error = {}
-        path = os.path.join(label.dataset, label.data_key[1:]) if label.data_key.find('/') != -1 else os.path.join(label.dataset, label.data_key)
+        path = os.path.join(label.dataset, label.data_key[1:]) if label.data_key.startswith('/') else os.path.join(label.dataset, label.data_key)
         path = os.path.join(directory_path, path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         label_error = None
