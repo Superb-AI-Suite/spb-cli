@@ -22,7 +22,7 @@ def cli():
 # @click.option('--profile_name', prompt='Profile Name', default='default')]
 @click.option('-n', '--account_name', required=False, help="Your account name")
 @click.option('-k', '--access_key', required=False, help="Your access key")
-@click.option('-l', '--list', 'list_flag', is_flag=True, help="List your config")
+@click.option('-l', '--list', 'list_flag', is_flag=True, help="Displays all your configurations")
 def configure(account_name, access_key, list_flag):
     """Config your CREDENTIALS(Profile Name, Access Key)"""
     profile_name = 'default'
