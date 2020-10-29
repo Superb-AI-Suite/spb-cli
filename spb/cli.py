@@ -20,10 +20,11 @@ def cli():
 
 @cli.command()
 # @click.option('--profile_name', prompt='Profile Name', default='default')]
-@click.option('-n', '--account_name', required=False)
-@click.option('-k', '--access_key', required=False)
-@click.option('-l', '--list', 'list_flag', is_flag=True)
+@click.option('-n', '--account_name', required=False, help="Your account name")
+@click.option('-k', '--access_key', required=False, help="Access Key of your account")
+@click.option('-l', '--list', 'list_flag', is_flag=True, help="List your config")
 def configure(account_name, access_key, list_flag):
+    """Config your CREDENTIALS(Profile Name, Access Key)"""
     profile_name = 'default'
     if list_flag:
         helper.list_config(profile_name)
@@ -37,16 +38,19 @@ def configure(account_name, access_key, list_flag):
 
 @cli.group()
 def describe():
+    """Describe your RESOURCES in Suite"""
     _initiation_cli()
     spb.client()
     pass
 
 @describe.command()
 def projects():
+    """Get all of your project in Suite"""
     helper.describe_projects()
 
 @cli.group()
 def upload():
+    """Upload your data to Suite"""
     _initiation_cli()
     pass
 
@@ -57,6 +61,7 @@ def upload():
 @click.option('-l', '--include-label', 'include_label', default=False, is_flag=True, help='Upload your pre-labels to the project')
 @click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
 def dataset(name, project_name, directory_path, include_label, is_forced):
+    """Upload images to your Suite project"""
     project = _get_project_with_name(project_name)
     if not project:
         return
@@ -79,6 +84,7 @@ def dataset(name, project_name, directory_path, include_label, is_forced):
 @click.option('-d', '--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
 @click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
 def labels(project_name, dataset_name, directory_path, is_forced):
+    """Upload label json to your Suite project"""
     project = _get_project_with_name(project_name)
     if not project:
         return
@@ -100,6 +106,7 @@ def labels(project_name, dataset_name, directory_path, is_forced):
 @click.option('-p', '--project', 'project_name', help='Target project name')
 @click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
 def download(project_name, directory_path, is_forced):
+    """Download all data and labels of your project in Suite """
     _initiation_cli()
     project = _get_project_with_name(project_name)
     if not project:
