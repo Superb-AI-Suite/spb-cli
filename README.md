@@ -159,6 +159,8 @@ The result is saved to the designated directory. For example:
       ├─ 2.jpg.json
       ...
 ```
+## Reference Docs
+https://docs.contour.so/Superb-AI-Suite/spb-cli/getting-started
 
 ## Contributing
 
