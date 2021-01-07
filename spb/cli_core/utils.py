@@ -3,6 +3,7 @@ import os
 import glob
 import imghdr
 from imghdr import tests
+from natsort import natsorted
 
 def get_project_config(line):
     r = re.compile(r'([^\t]*)\t*')
@@ -40,6 +41,25 @@ def recursive_glob_image_files(input_path):
                 key = extract_file_key(input_path, file_path)
                 imgs_path[key] = file_path
     return imgs_path
+
+def select_image_files(file_list):
+    image_file_list = []
+    support_img_format = ('.png', '.jpg', '.bmp', '.jpeg', '.tiff', '.tif')
+    for file_name in file_list:
+        if file_name.lower().endswith(support_img_format):
+            image_file_list.append(file_name)
+    return image_file_list
+
+def recursive_glob_video_paths(input_path):
+    support_img_format = ['png', 'jpg', 'bmp', 'jpeg', 'tiff', 'tif']
+    video_paths = {}
+    for dirpath, dirnames, files in os.walk(input_path):
+        if len(files) != 0 and dirpath != input_path:
+            image_file_list = select_image_files(files)
+            if len(image_file_list) != 0:
+                key = extract_file_key(input_path, dirpath)
+                video_paths[key] = {'path': dirpath, 'file_names': natsorted(image_file_list)}
+    return video_paths
 
 def recursive_glob_label_files(input_path):
     support_label_format = ['.json']

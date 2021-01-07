@@ -13,7 +13,7 @@ import requests
 from collections import ChainMap
 
 import spb
-from spb.cli_core.utils import recursive_glob_image_files, recursive_glob_label_files
+from spb.cli_core.utils import recursive_glob_video_paths, recursive_glob_label_files
 from spb.models.label import Label
 
 console = rich.console.Console()
@@ -23,29 +23,27 @@ NUM_MULTI_PROCESS = 4
 LABEL_DESCRIBE_PAGE_SIZE = 10
 
 
-class LabelData():
-
+class VideoLabelData():
     def upload_data(self, project, dataset_name, directory_path, include_label, is_forced):
-        imgs_path = recursive_glob_image_files(directory_path)
+        video_paths = recursive_glob_video_paths(directory_path)
         if not is_forced:
-            if not click.confirm(f"Uploading {len(imgs_path)} data and {len(recursive_glob_label_files(directory_path)) if include_label else 0 } labels to dataset '{dataset_name}' under project '{project.name}'. Proceed?"):
-                    return
-        asset_images = []
+            if not click.confirm(f"Uploading {len(video_paths)} data and {len(recursive_glob_label_files(directory_path)) if include_label else 0 } labels to dataset '{dataset_name}' under project '{project.name}'. Proceed?"):
+                return
+        asset_videos = []
         manager = Manager()
-        if len(imgs_path) != 0:
-            for key in imgs_path:
+        if len(video_paths) != 0:
+            for key in video_paths:
                 file_name = key
-                asset_image = {
-                    'file': imgs_path[key],
-                    'file_name': file_name,
+                asset_video = {
+                    'files': video_paths[key],
                     'data_key': key,
                     'dataset': dataset_name
                 }
-                asset_images.append(asset_image)
-            data_results = manager.list([manager.dict()]*len(asset_images))
+                asset_videos.append(asset_video)
+            data_results = manager.list([manager.dict()]*len(asset_videos))
             console.print(f"Uploading data:")
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_videos), asset_videos, data_results)), total=len(asset_videos)))
         else:
             data_results = [{}]
 
@@ -61,9 +59,9 @@ class LabelData():
                 label_results = [{}]
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
-        success_data_count = len(asset_images) - len(data_results[0])
-        data_success_ratio = round(success_data_count/len(asset_images)*100,2) if len(data_results[0]) != 0 else 100
-        console.print(f'Successful upload of {success_data_count} out of {len(asset_images)} data. ({data_success_ratio}%) - [b red]{len(data_results[0])} ERRORS[/b red]')
+        success_data_count = len(asset_videos) - len(data_results[0])
+        data_success_ratio = round(success_data_count/len(asset_videos)*100,2) if len(data_results[0]) != 0 else 100
+        console.print(f'Successful upload of {success_data_count} out of {len(asset_videos)} data. ({data_success_ratio}%) - [b red]{len(data_results[0])} ERRORS[/b red]')
 
         if include_label:
             success_label_count=len(labels_path)-len(label_results[0])
@@ -72,6 +70,8 @@ class LabelData():
             self._print_error_table(dict(data_results[0]), dict(label_results[0]))
         else:
             self._print_error_table(data_results=dict(data_results[0]))
+
+        self._print_error_table(data_results=dict(data_results[0]))
 
     def upload_label(self, project, dataset_name, directory_path, is_forced):
         labels_path = recursive_glob_label_files(directory_path)
@@ -94,7 +94,7 @@ class LabelData():
         self._print_error_table(label_results=dict(label_results[0]))
 
     def download(self, project, directory_path, is_forced):
-        command = spb.Command(type='describe_label')
+        command = spb.Command(type='describe_videolabel')
         _, label_count = spb.run(command=command, option={
             'project_id' : project.id
         }, page_size = 1, page = 1)
@@ -105,6 +105,11 @@ class LabelData():
                     return
             manager = Manager()
             results = manager.list([manager.dict()]*page_length)
+
+            # inputs = zip([project.id] * page_length, range(page_length), [directory_path] * page_length, results)
+            # for i in inputs:
+            #     _download_worker(i)
+
             with Pool(NUM_MULTI_PROCESS) as p:
                 list(tqdm.tqdm(p.imap(_download_worker, zip([project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
 
@@ -189,7 +194,7 @@ class LabelData():
 
 def _download_worker(args):
     [project_id, page_idx, directory_path, result] = args
-    command = spb.Command(type='describe_label')
+    command = spb.Command(type='describe_videolabel')
     labels, _ = spb.run(command=command, option={
         'project_id' : project_id
     }, page_size = LABEL_DESCRIBE_PAGE_SIZE, page = page_idx + 1)
@@ -207,10 +212,19 @@ def _download_worker(args):
             error = {'label':str(e)}
             label_error = error
         try:
-            data_url = label.data_url
-            path = f'{path}'
-            r = requests.get(data_url, allow_redirects=True)
-            open(path, 'wb').write(r.content)
+            custom_signed_url = json.loads(label.data_url)
+            base_url = custom_signed_url['base_url']
+            query = custom_signed_url['query']
+            file_infos = custom_signed_url['file_infos']
+            for idx, file_info in enumerate(file_infos, 1):
+                file_path = f'{path}/{file_info["file_name"]}'
+                ext = file_info['file_name'].split('.')[1]
+                new_path = os.path.split(file_path)[0]
+                if not os.path.exists(new_path):
+                    os.makedirs(new_path)
+                file_url = '{}image_{:08d}.{}?{}'.format(base_url, idx, ext, query)
+                r = requests.get(file_url, allow_redirects=True)
+                open(file_path, 'wb').write(r.content)
         except Exception as e:
             error.update({'data':str(e)})
             data_error = error
@@ -227,13 +241,21 @@ def _download_worker(args):
 
 def _upload_asset(args):
     logging.debug(f'Uploading Asset: {args}')
-
-    [project_id, asset_image, result] = args
+    [project_id, asset_video, result] = args
     try:
-        command = spb.Command(type='create_data')
-        spb.run(command=command, option=asset_image, optional={'projectId': project_id})
+        command = spb.Command(type='create_videodata')
+        result = spb.run(command=command, option=asset_video, optional={'projectId': project_id})
+        # TODO: Perhaps move this logic elsewhere
+        file_infos = json.loads(result.file_infos)
+        for file_info in file_infos:
+            path = asset_video['files']['path']
+            file_name = file_info['file_name']
+            file_path = F'{path}/{file_name}'
+            data = open(file_path,'rb').read()
+            response = requests.put(file_info['presigned_url'],data=data)
+            
     except Exception as e:
-        _set_error_result(asset_image['data_key'], result, str(e), e)
+        _set_error_result(asset_video['data_key'], result, str(e), e)
         pass
 
 
@@ -250,7 +272,7 @@ def _update_label(args):
         'data_key': data_key
     }
     try:
-        command = spb.Command(type='describe_label')
+        command = spb.Command(type='describe_videolabel')
         described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
         described_label = described_labels[0] if described_labels and described_labels[0] else None
         if described_label is None:
@@ -266,20 +288,23 @@ def _update_label(args):
     label = {
         "id": described_label.id,
         "project_id": project_id,
-        "tags": [tag.get_datas(tag) for tag in described_label.tags],
-        "result": described_label.result,
+        "tags": [tag.get_datas(tag) for tag in described_label.tags]
     }
     try:
         with open(label_path) as json_file:
             json_data = json.load(json_file)
+        # TODO: NEED info.json VALIDATION
         if json_data['result'] is None:
             return
-
-        if 'result' in json_data:
-            label['result'] = json_data['result']
+        else:
+            read_response = requests.get(described_label.info_read_presigned_url)
+            info_json = read_response.json()
+            info_json['result'] = json_data['result']
+            write_response = requests.put(described_label.info_write_presigned_url ,data=json.dumps(info_json))
+            
         if 'tags' in json_data:
             label['tags'] = json_data['tags']
-        command = spb.Command(type='update_label')
+        command = spb.Command(type='update_videolabel')
         label = spb.run(command=command, option=label)
         with open(label_path, 'w') as f:
             f.write(label.toJson())

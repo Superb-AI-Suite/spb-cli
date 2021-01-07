@@ -76,8 +76,13 @@ def dataset(name, project_name, directory_path, include_label, is_forced):
         if not name:
             return
 
-    helper.upload(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
-
+    if project.workapp.startswith('video'):
+        helper.upload_video(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
+    
+    elif project.workapp.startswith('image'):
+        helper.upload(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
+    
+    
 @upload.command()
 @click.option('-p', '--project', 'project_name', help='Target project name')
 @click.option('-n', '--name', 'dataset_name', help='Target dataset name')
@@ -97,7 +102,11 @@ def labels(project_name, dataset_name, directory_path, is_forced):
                 break
         if not dataset_name:
             return
-    helper.upload_label(project, dataset_name, directory_path, is_forced=is_forced)
+
+    if project.workapp.startswith('video'):
+        helper.upload_video_label(project, dataset_name, directory_path, is_forced=is_forced)
+    elif project.workapp.startswith('image'):
+        helper.upload_label(project, dataset_name, directory_path, is_forced=is_forced)
 
 
 
@@ -111,7 +120,11 @@ def download(project_name, directory_path, is_forced):
     project = _get_project_with_name(project_name)
     if not project:
         return
-    helper.download(project, directory_path, is_forced=is_forced)
+    
+    if project.workapp.startswith('video'):
+        helper.download_video(project, directory_path, is_forced=is_forced)
+    elif project.workapp.startswith('image'):
+        helper.download(project, directory_path, is_forced=is_forced)
 
 
 @cli.command()

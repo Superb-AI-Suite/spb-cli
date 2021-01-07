@@ -71,7 +71,7 @@ class Query(object):
             return None
 
     def _query_id(self, model):
-        return model.get_resource_name()
+        return Query._camelcase(model.get_resource_name())
 
     def _mutation_query_id(self, model):
         if model.id is None:

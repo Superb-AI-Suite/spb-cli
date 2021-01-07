@@ -6,12 +6,14 @@ import rich.console
 
 from spb.cli_core.commands.project import Project
 from spb.cli_core.commands.label_data import LabelData
+from spb.cli_core.commands.video_label_data import VideoLabelData
 from spb.cli_core.utils import get_project_config
 console = rich.console.Console()
 
 class Helper:
     project = Project()
     label_data = LabelData()
+    video_label_data = VideoLabelData()
 
     def set_config(self, profile_name, account_name, access_key):
         credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
@@ -45,12 +47,21 @@ class Helper:
 
     def upload(self, dataset_name, project, directory_path, include_label, is_forced):
         return self.label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)
+    
+    def upload_video(self, dataset_name, project, directory_path, include_label, is_forced):
+        return self.video_label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)
 
     def upload_label(self, project, dataset_name, directory_path, is_forced):
         return self.label_data.upload_label(project, dataset_name, directory_path, is_forced)
 
+    def upload_video_label(self, project, dataset_name, directory_path, is_forced):
+        return self.video_label_data.upload_label(project, dataset_name, directory_path, is_forced)
+
     def download(self, project, directory_path, is_forced):
         return self.label_data.download(project, directory_path, is_forced)
+    
+    def download_video(self, project, directory_path, is_forced):
+        return self.video_label_data.download(project, directory_path, is_forced)
 
     def check_project(self, project_name):
         return self.project.check_project(project_name)
