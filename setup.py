@@ -60,6 +60,7 @@ setup(
         "zipp==3.1.0",
         "scikit-image>=0.16.1",
         "boto3>=1.12.0",
+        "natsort>=7.1.0",
     ],
     zip_safe=False,
     dependency_links=[],
