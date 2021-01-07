@@ -21,7 +21,7 @@ jobs:
         python-version: 3.7
     - name: Install chardet dependency
       run: |
-        pip3 install chardet
+        pip3 install 'chardet<4,>=3.0.2'
     - name: Install dependencies
       run: |
         sudo apt-get install libdbus-glib-1-dev python-dbus
