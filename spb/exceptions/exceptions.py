@@ -28,7 +28,7 @@ class APILimitExceededException(APIException):
     super().__init__(message, code)
     # self.logger.error(message, code)
 
-class APIUnknowException(APIException):
+class APIUnknownException(APIException):
   def __init__(self, message, code='200003'):
     super().__init__(message, code)
     # self.logger.error(message, code)

@@ -7,7 +7,7 @@ import base64
 
 from spb.command import Command
 from spb.models.project import Project
-from spb.exceptions.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknowException
+from spb.exceptions.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException
 
 class Session:
     endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
@@ -99,7 +99,7 @@ class Session:
         elif 'message' in response and response.get('message', None) == 'Limit Exceeded':
             raise APILimitExceededException()
         elif 'message' in response:
-            raise APIUnknowException(response.get('message', None))
+            raise APIUnknownException(response.get('message', None))
         if errors:
             raise APIException(errors[0]['message'])
         if 'data' not in response:
@@ -134,7 +134,7 @@ class Session:
         elif 'message' in response and response.get('message', None) == 'Limit Exceeded':
             raise APILimitExceededException()
         elif 'message' in response:
-            raise APIUnknowException(response.get('message', None))
+            raise APIUnknownException(response.get('message', None))
         if errors:
             raise APIException(errors[0]['message'])
         return response.get('data')

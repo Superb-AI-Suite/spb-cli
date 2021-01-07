@@ -79,3 +79,4 @@ class Project(Model):
     # configure = Type(property_name='configure', express=Configure)
     summary = Object(property_name='configure', express=ProjectSummary)
     label_interface = JsonObject(property_name='labelInterface', immutable=True)
+    workapp = String(property_name='workapp')
