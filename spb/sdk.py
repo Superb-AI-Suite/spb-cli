@@ -262,9 +262,13 @@ class DataHandle(object):
             print('[WARNING] Invalid category name exists')
             return
 
+        if not self._data.result:
+            self._data.result = {}
         self._data.result = {**self._data.result, 'categorization': {'value': label_ids}}
         self._upload_to_suite()
 
     def set_object_labels(self, labels):
+        if not self._data.result:
+            self._data.result = {}
         self._data.result = {**self._data.result, 'objects': labels}
         self._upload_to_suite()
