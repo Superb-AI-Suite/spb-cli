@@ -72,5 +72,4 @@ class CmdMeta(type):
 
 
 class Command(metaclass=CmdMeta):
-    def __init__(self, type):
-        print(self.__dict__)
+    def __init__(self, type): pass
