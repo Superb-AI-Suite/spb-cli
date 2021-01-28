@@ -78,11 +78,9 @@ def dataset(name, project_name, directory_path, include_label, is_forced):
 
     if project.workapp.startswith('video'):
         helper.upload_video(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
-    
     elif project.workapp.startswith('image'):
         helper.upload(dataset_name=name, project=project, directory_path=directory_path, include_label=include_label, is_forced=is_forced)
-    
-    
+
 @upload.command()
 @click.option('-p', '--project', 'project_name', help='Target project name')
 @click.option('-n', '--name', 'dataset_name', help='Target dataset name')
