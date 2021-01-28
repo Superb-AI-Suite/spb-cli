@@ -90,14 +90,26 @@ class LabelData():
         success_label_count=len(labels_path)-len(label_results[0])
         success_label_ratio = round(success_label_count/len(labels_path)*100,2) if len(labels_path) != 0 else 100
         console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({success_label_ratio}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
-
         self._print_error_table(label_results=dict(label_results[0]))
+        
+        
+    def _count_labels(self, project_id: str) -> int:
+        result = 0 
+        try:
+            _, result = spb.run(command=spb.Command(type='describe_label'), 
+                           option={
+                                'project_id' : project_id
+                           }, 
+                           page_size=1, 
+                           page=1)
+        except Exception as e:
+            logger.warning('Fail to describe_label', exec_info=True)
+            result = 0
+        return result
 
+    
     def download(self, project, directory_path, is_forced):
-        command = spb.Command(type='describe_label')
-        _, label_count = spb.run(command=command, option={
-            'project_id' : project.id
-        }, page_size = 1, page = 1)
+        label_count = self._count_labels(project.id)
         if label_count != 0:
             page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
             if not is_forced:
