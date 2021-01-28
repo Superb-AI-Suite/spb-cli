@@ -103,8 +103,8 @@ class LabelData():
                            page_size=1, 
                            page=1)
         except Exception as e:
-            logger.warning('Fail to describe_label', exec_info=True)
-            result = 0
+            logger.error(f'Fail to count label in project: {project_id}')
+            simple_logger.warning(f'Fail to count label in project: {project_id}', exec_info=True)
         return result
 
     
