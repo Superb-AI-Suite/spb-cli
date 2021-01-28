@@ -40,10 +40,8 @@ def create_logger(config=LoggerConfig(), logger=None):
         logger = logging.getLogger()
         logger.propagate = False
         logger.setLevel(config.loglevel)
-        if config.logtype == 'FILE':
-            handler = _file_log_handler(config)
-            logger.addHandler(handler)
-        elif config.logtype == 'STREAM':
+                           
+        if config.logtype == 'STREAM':
             handler = _stream_log_handler(config)
             logger.addHandler(handler)
         else:
@@ -51,11 +49,10 @@ def create_logger(config=LoggerConfig(), logger=None):
             fhandler = _file_log_handler(config)
             logger.addHandler(shandler)
             logger.addHandler(fhandler)
-        simpleLoggerConfig = LoggerConfig(filename='error.simple.log')
+
+        simpleLoggerConfig = LoggerConfig(filename='error.log')
         simple_logger = logging.getLogger('simple')
         simple_logger.propagate = False
         simple_logger.setLevel(simpleLoggerConfig.loglevel)
         simple_handler = _file_log_handler(simpleLoggerConfig)
         simple_logger.addHandler(simple_handler)
-    else:
-        pass
