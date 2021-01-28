@@ -36,23 +36,25 @@ def _stream_log_handler(config):
     return shandler
 
 def create_logger(config=LoggerConfig(), logger=None):
-    if logger is None:
-        logger = logging.getLogger()
-        logger.propagate = False
-        logger.setLevel(config.loglevel)
+    if logger is not None: 
+      return
                            
-        if config.logtype == 'STREAM':
-            handler = _stream_log_handler(config)
-            logger.addHandler(handler)
-        else:
-            shandler = _stream_log_handler(config)
-            fhandler = _file_log_handler(config)
-            logger.addHandler(shandler)
-            logger.addHandler(fhandler)
+    logger = logging.getLogger()
+    logger.propagate = False
+    logger.setLevel(config.loglevel)
 
-        simpleLoggerConfig = LoggerConfig(filename='error.log')
-        simple_logger = logging.getLogger('simple')
-        simple_logger.propagate = False
-        simple_logger.setLevel(simpleLoggerConfig.loglevel)
-        simple_handler = _file_log_handler(simpleLoggerConfig)
-        simple_logger.addHandler(simple_handler)
+    if config.logtype == 'STREAM':
+        handler = _stream_log_handler(config)
+        logger.addHandler(handler)
+    else:
+        shandler = _stream_log_handler(config)
+        fhandler = _file_log_handler(config)
+        logger.addHandler(shandler)
+        logger.addHandler(fhandler)
+
+    simpleLoggerConfig = LoggerConfig(filename='error.log')
+    simple_logger = logging.getLogger('simple')
+    simple_logger.propagate = False
+    simple_logger.setLevel(simpleLoggerConfig.loglevel)
+    simple_handler = _file_log_handler(simpleLoggerConfig)
+    simple_logger.addHandler(simple_handler)
