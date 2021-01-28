@@ -313,9 +313,9 @@ def _update_label(args):
 
 def _set_error_result(key, result, message, exception=None):
     result[key] = message
-    simple_logger.error(f'{key}    {message}')
-    if exception:
-        logger.error(f'{key}    {message}')
-        logger.error(exception, exc_info=True)
-    else:
-        logger.error(f'{key}    {message}')
+    simple_logger.error(f'{key}    {message}', exc_info=True)
+#     if exception:
+#         logger.error(f'{key}    {message}')
+#         logger.error(exception, exc_info=True)
+#     else:
+#         logger.error(f'{key}    {message}')
