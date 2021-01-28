@@ -52,7 +52,7 @@ def create_logger(config=LoggerConfig(), logger=None):
         logger.addHandler(shandler)
         logger.addHandler(fhandler)
 
-    simpleLoggerConfig = LoggerConfig(filename='error.log')
+    simpleLoggerConfig = LoggerConfig(filename='error.log', loglevel=logging.WARNING)
     simple_logger = logging.getLogger('simple')
     simple_logger.propagate = False
     simple_logger.setLevel(simpleLoggerConfig.loglevel)
