@@ -47,14 +47,9 @@ def create_logger(config=LoggerConfig(), logger=None):
         handler = _stream_log_handler(config)
         logger.addHandler(handler)
     else:
-        shandler = _stream_log_handler(config)
-        fhandler = _file_log_handler(config)
-        logger.addHandler(shandler)
-        logger.addHandler(fhandler)
-
-    simpleLoggerConfig = LoggerConfig(filename='error.log', loglevel=logging.WARNING)
-    simple_logger = logging.getLogger('simple')
-    simple_logger.propagate = False
-    simple_logger.setLevel(simpleLoggerConfig.loglevel)
-    simple_handler = _file_log_handler(simpleLoggerConfig)
-    simple_logger.addHandler(simple_handler)
+        simpleLoggerConfig = LoggerConfig(filename='error.log', loglevel=logging.WARNING)
+        simple_logger = logging.getLogger('simple')
+        simple_logger.propagate = False
+        simple_logger.setLevel(simpleLoggerConfig.loglevel)
+        simple_handler = _file_log_handler(simpleLoggerConfig)
+        simple_logger.addHandler(simple_handler)
