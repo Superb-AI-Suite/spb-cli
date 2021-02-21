@@ -237,11 +237,15 @@ class DataHandle(object):
 
         if not self._data.result:
             self._data.result = {}
+        if 'objects' not in self._data.result:
+            self._data.result['objects'] = []
         self._data.result = {**self._data.result, 'categorization': {'value': label_ids}}
         self._upload_to_suite()
 
     def set_object_labels(self, labels):
         if not self._data.result:
             self._data.result = {}
+        if 'categorization' not in self._data.result:
+            self._data.result['categorization'] = {'value': []}
         self._data.result = {**self._data.result, 'objects': labels}
         self._upload_to_suite()
