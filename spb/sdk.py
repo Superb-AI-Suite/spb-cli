@@ -27,12 +27,17 @@ import urllib
 import os, random
 import skimage.io
 import boto3
+import json
+import glob
+import requests
+
+from natsort import natsorted
 
 
 __author__ = spb.__author__
 __version__ = spb.__version__
 
-__all__ = ('Client', 'DataHandle')
+__all__ = ('Client', 'DataHandle', 'VideoDataHandle')
 
 
 class Client(object):
@@ -94,12 +99,22 @@ class Client(object):
             print('[WARNING] Index out of bounds. Empty list returned')
             return []
 
-        command = spb.Command(type='describe_label')
-        tags = [{'name': tag} for tag in tags]
-        option = {'project_id': self._project.id, 'tags': tags, **kwargs}
-        data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
-        for data in data_page:
-            yield DataHandle(data, self._project)
+        workapp = self._project.workapp
+        if workapp == 'video-siesta':
+            # Video
+            command = spb.Command(type='describe_videolabel')
+            tags = [{'name': tag} for tag in tags]
+            option = {'project_id': self._project.id, 'tags': tags, **kwargs}
+            data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
+            for data in data_page:
+                yield VideoDataHandle(data, self._project)
+        else:
+            command = spb.Command(type='describe_label')
+            tags = [{'name': tag} for tag in tags]
+            option = {'project_id': self._project.id, 'tags': tags, **kwargs}
+            data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
+            for data in data_page:
+                yield DataHandle(data, self._project)
 
     def upload_image(self, path, dataset_name, key=None, name=None):
         if not os.path.isfile(path):
@@ -136,6 +151,42 @@ class Client(object):
         finally:
             if os.path.isfile(temp_path):
                 os.remove(temp_path)
+
+    def upload_video(self, path, dataset_name, key=None):
+        if not os.path.isdir(path):
+            print('[WARNING] Invalid path. Upload failed')
+            return
+
+        # TODO: support_img_format is const
+        support_img_format = ('png', 'jpg', 'bmp', 'jpeg', 'tiff', 'tif')
+        file_names = [os.path.basename(file_path) for file_path in glob.glob(os.path.join(path, '*')) if file_path.lower().endswith(support_img_format)]
+        if len(file_names) == 0:
+            print('[WARNING] Invalid path. Upload failed')
+            return
+
+        if key is None:
+            key = os.path.split(path)[-1]
+
+        asset_video = {
+            'dataset': dataset_name,
+            'data_key': key,
+            'files': {
+                'path': path,
+                'file_names': natsorted(file_names),
+            },
+        }
+
+        try:
+            command = spb.Command(type='create_videodata')
+            result = spb.run(command=command, option=asset_video, optional={'projectId': self._project.id})
+            file_infos = json.loads(result.file_infos)
+            for file_info in file_infos:
+                file_name = file_info['file_name']
+                file_path = os.path.join(path, file_name)
+                data = open(file_path,'rb').read()
+                response = requests.put(file_info['presigned_url'], data=data)
+        except Exception as e:
+            print('[WARNING] Duplicate data key. Upload failed')
 
 
 class DataHandle(object):
@@ -249,3 +300,97 @@ class DataHandle(object):
             self._data.result['categorization'] = {'value': []}
         self._data.result = {**self._data.result, 'objects': labels}
         self._upload_to_suite()
+
+
+class VideoDataHandle(object):
+    _VIDEO_URL_LIFETIME_IN_SECONDS = 3600
+
+    def __init__(self, data, project):
+        super().__init__()
+
+        self._data = data
+        self._project = project
+        self._created = time.time()
+
+    def _is_expired_video_url(self):
+        is_expired = time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
+
+        if is_expired:
+            print('[WARNING] Video URL has been expired. Call get_data(...) of SuiteProject to renew URL')
+
+        return is_expired
+
+    def _upload_to_suite(self):
+        command = spb.Command(type='update_videolabel')
+        _ = spb.run(command=command, option=self._data)
+
+    ##############################
+    # Immutable variables
+    ##############################
+
+    def get_key(self):
+        return self._data.data_key
+
+    def get_dataset_name(self):
+        return self._data.dataset
+
+    def get_status(self):
+        return self._data.status
+
+    def get_frame_url(self, idx, data_url=None):
+        if self._is_expired_video_url():
+            return None
+
+        if data_url is None:
+            data_url = json.loads(self._data.data_url)
+        file_info = data_url['file_infos'][idx]
+        return f"{data_url['base_url']}{file_info['file_name']}?{data_url['query']}"
+
+    def get_frame_urls(self):
+        if self._is_expired_video_url():
+            return None
+
+        data_url = json.loads(self._data.data_url)
+        for frame_idx in range(len(data_url['file_infos'])):
+            yield self.get_frame_url(frame_idx, data_url)
+
+    ##############################
+    # Simple SDK functions
+    ##############################
+
+    def download_video(self, download_to=None):
+        if self._is_expired_video_url():
+            return None, None
+
+        if download_to is None:
+            download_to = self._data.data_key
+            print('[INFO] Downloaded to {}'.format(download_to))
+
+        data_url = json.loads(self._data.data_url)
+        for frame_idx, file_info in enumerate(data_url['file_infos']):
+            url = self.get_frame_url(frame_idx, data_url)
+            urllib.request.urlretrieve(url, os.path.join(download_to, file_info['file_name']))
+
+    def get_frame(self, idx):
+        if self._is_expired_video_url():
+            return None
+
+        return skimage.io.imread(self.get_frame_url(idx))
+
+    def get_frames(self):
+        if self._is_expired_video_url():
+            return None
+
+        for url in self.get_frame_urls():
+            yield skimage.io.imread(url)
+
+    def get_object_labels(self):
+        try:
+            read_response = requests.get(self._data.info_read_presigned_url)
+            label_info = read_response.json()
+            return label_info['result']['objects']
+        except:
+            return []
+
+    def get_tags(self):
+        return [tag.name for tag in self._data.tags]
