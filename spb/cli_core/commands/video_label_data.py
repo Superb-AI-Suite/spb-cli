@@ -15,6 +15,7 @@ from collections import ChainMap
 import spb
 from spb.cli_core.utils import recursive_glob_video_paths, recursive_glob_label_files
 from spb.models.label import Label
+from spb.libs.phy_credit.phy_credit.video import LabelInfo
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -43,7 +44,7 @@ class VideoLabelData():
             data_results = manager.list([manager.dict()]*len(asset_videos))
             console.print(f"Uploading data:")
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_videos), asset_videos, data_results)), total=len(asset_videos)))
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_videos), [project.label_interface]*len(labels_path), asset_videos, data_results)), total=len(asset_videos)))
         else:
             data_results = [{}]
 
@@ -54,7 +55,7 @@ class VideoLabelData():
             if len(labels_path) != 0:
                 label_results = manager.list([manager.dict()]*len(labels_path))
                 with Pool(NUM_MULTI_PROCESS) as p:
-                    list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                    list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [project.label_interface]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
             else:
                 label_results = [{}]
 
@@ -82,7 +83,7 @@ class VideoLabelData():
             manager = Manager()
             label_results = manager.list([manager.dict()]*len(labels_path))
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [project.label_interface]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
         else:
             label_results = [{}]
 
@@ -260,7 +261,7 @@ def _upload_asset(args):
 
 
 def _update_label(args):
-    [label_path, project_id, dataset, result] = args
+    [label_path, project_id, label_interface, dataset, result] = args
     data_key = ".".join(label_path.split(".")[:-1])
     if not os.path.isfile(label_path):
         _set_error_result(data_key, result, 'Label json file is not existed.')
@@ -290,22 +291,24 @@ def _update_label(args):
         "project_id": project_id,
         "tags": [tag.get_datas(tag) for tag in described_label.tags]
     }
+
+
     try:
         with open(label_path) as json_file:
             json_data = json.load(json_file)
         # TODO: NEED info.json VALIDATION
         if json_data['result'] is None:
             return
-        else:
-            read_response = requests.get(described_label.info_read_presigned_url)
-            info_json = read_response.json()
-            info_json['result'] = json_data['result']
-            write_response = requests.put(described_label.info_write_presigned_url ,data=json.dumps(info_json))
-            
+        
+        label_info = LabelInfo(label_interface=label_interface, result=json_data['result'])
+        info_json = label_info.build_info()
+        write_response = requests.put(described_label.info_write_presigned_url ,data=json.dumps(info_json))
+
         if 'tags' in json_data:
             label['tags'] = json_data['tags']
+ 
         command = spb.Command(type='update_videolabel')
-        label = spb.run(command=command, option=label)
+        label = spb.run(command=command, option=label, optional={'info': json.dumps(info_json)})
         with open(label_path, 'w') as f:
             f.write(label.toJson())
     except Exception as e:
