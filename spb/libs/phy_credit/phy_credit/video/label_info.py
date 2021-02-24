@@ -3,15 +3,16 @@ from uuid import uuid4
 
 class LabelInfo:
     _VERSION = '0.2.1-py'
-    _INIT_RESULT = {
-        'categories': {
-            'frames': [],
-            'properties': [],
-        },
-        'objects': []
-    }
 
-    def __init__(self, label_interface, result=_INIT_RESULT):
+    def __init__(self, label_interface, result=None):
+        if result is None:
+            result = {
+                'categories': {
+                    'frames': [],
+                    'properties': [],
+                },
+                'objects': []
+            }
         self.label_interface = label_interface
         self.result = result
         self.object_classes_map = {
