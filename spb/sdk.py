@@ -32,6 +32,7 @@ import glob
 import requests
 
 from natsort import natsorted
+from spb.libs.phy_credit.phy_credit.video import LabelInfo
 
 
 __author__ = spb.__author__
@@ -320,9 +321,12 @@ class VideoDataHandle(object):
 
         return is_expired
 
-    def _upload_to_suite(self):
+    def _upload_to_suite(self, info=None):
         command = spb.Command(type='update_videolabel')
-        _ = spb.run(command=command, option=self._data)
+        if info is None:
+            _ = spb.run(command=command, option=self._data)
+        else:
+            _ = spb.run(command=command, option=self._data, optional={'info': json.dumps(info)})
 
     ##############################
     # Immutable variables
@@ -384,11 +388,21 @@ class VideoDataHandle(object):
         for url in self.get_frame_urls():
             yield skimage.io.imread(url)
 
+    def set_object_labels(self, labels):
+        label_info = LabelInfo(self._project.label_interface)
+        for label in labels:
+            label_info.add_object(**label)
+        info = label_info.build_info()
+
+        self._upload_to_suite(info={'tags': info['tags']})
+        write_response = requests.put(self._data.info_write_presigned_url, data=json.dumps(info))
+
     def get_object_labels(self):
         try:
             read_response = requests.get(self._data.info_read_presigned_url)
-            label_info = read_response.json()
-            return label_info['result']['objects']
+            label_result = read_response.json()
+            label_info = LabelInfo(self._project.label_interface, result=label_result['result'])
+            return label_info.get_objects()
         except:
             return []
 

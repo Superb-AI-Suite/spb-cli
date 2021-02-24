@@ -54,12 +54,12 @@ class Query(object):
         if mode == 'QUERY':
             for key, value in optional.items():
                 if value is not None:
-                    temp[key] = value if str(value).isdigit() else f'"{str(value)}"'
+                    temp[key] = value if str(value).isdigit() else Query._safe_double_quote(value)
 
         elif mode == 'MUTATION':
             for key, value in optional.items():
                 if value is not None and key != 'page' and key != 'pageSize':
-                    temp[key] = value if str(value).isdigit() else f'"{str(value)}"'
+                    temp[key] = value if str(value).isdigit() else Query._safe_double_quote(value)
 
         params = []
         for key, value in temp.items():
@@ -100,3 +100,8 @@ class Query(object):
         if not value:
             return value
         return value[0].lower() + re.sub(r"[\-_\.\s]([a-z])", lambda matched: matched.group(1).upper(), value[1:])
+
+    @classmethod
+    def _safe_double_quote(cls, value):
+        replaced_value = str(value).replace('"', '\\"')
+        return f'"{replaced_value}"'
