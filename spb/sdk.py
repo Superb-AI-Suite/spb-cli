@@ -388,8 +388,22 @@ class VideoDataHandle(object):
         for url in self.get_frame_urls():
             yield skimage.io.imread(url)
 
+    def _get_result(self):
+        try:
+            read_response = requests.get(self._data.info_read_presigned_url)
+            label_result = read_response.json()
+            return label_result['result']
+        except:
+            return None
+
     def set_object_labels(self, labels):
-        label_info = LabelInfo(self._project.label_interface)
+        result = self._get_result()
+        if result is None:
+            label_info = LabelInfo(self._project.label_interface)
+        else:
+            label_info = LabelInfo(self._project.label_interface, result=result)
+            label_info.init_objects()
+
         for label in labels:
             label_info.add_object(**label)
         info = label_info.build_info()
@@ -398,13 +412,32 @@ class VideoDataHandle(object):
         write_response = requests.put(self._data.info_write_presigned_url, data=json.dumps(info))
 
     def get_object_labels(self):
-        try:
-            read_response = requests.get(self._data.info_read_presigned_url)
-            label_result = read_response.json()
-            label_info = LabelInfo(self._project.label_interface, result=label_result['result'])
-            return label_info.get_objects()
-        except:
-            return []
+        result = self._get_result()
+        if result is None:
+            return None
+        label_info = LabelInfo(self._project.label_interface, result=result)
+        return label_info.get_objects()
+
+    def set_category_labels(self, label):
+        result = self._get_result()
+        if result is None:
+            label_info = LabelInfo(self._project.label_interface)
+        else:
+            label_info = LabelInfo(self._project.label_interface, result=result)
+            label_info.init_categories()
+
+        label_info.set_categories(**label)
+        info = label_info.build_info()
+
+        self._upload_to_suite(info={'tags': info['tags']})
+        write_response = requests.put(self._data.info_write_presigned_url, data=json.dumps(info))
+
+    def get_category_labels(self):
+        result = self._get_result()
+        if result is None:
+            return None
+        label_info = LabelInfo(self._project.label_interface, result=result)
+        return label_info.get_categories()
 
     def get_tags(self):
         return [tag.name for tag in self._data.tags]

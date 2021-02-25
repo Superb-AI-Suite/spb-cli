@@ -334,7 +334,203 @@ def test_build_label_info_with_result():
     pprint.pprint(labelInfo.build_tags())
     pprint.pprint(labelInfo.build_info())
 
+def test_build_label_info_w_properties_from_scratch():
+    label_interface_sample = {
+        "version": "0.1.0",
+        "data_type": "image sequence",
+        "categorization": {
+            "properties": []
+        },
+        "object_tracking": {
+            "keypoints": [],
+            "object_groups": [],
+            "object_classes": [
+                {
+                    "id": "f9c75f80-1f2d-45ef-875e-bbe5f49e56ff",
+                    "name": "Person",
+                    "color": "#FF625A",
+                    "properties": [
+                        {
+                            "id": "63fe0ee1-2a21-40b8-a0cd-4ac06e9093a4",
+                            "name": "identifiable",
+                            "type": "radio",
+                            "options": [
+                                {
+                                    "id": "2",
+                                    "name": "true"
+                                },
+                                {
+                                    "id": "d482ea4c-1424-42e7-9c02-277a1a20b75f",
+                                    "name": "false"
+                                }
+                            ],
+                            "required": True,
+                            "per_frame": False,
+                            "description": "",
+                            "render_value": False,
+                            "default_value": "2"
+                        },
+                        {
+                            "id": "9784c05a-00b6-4527-9b39-0b5e4e506176",
+                            "name": "accessories",
+                            "type": "checkbox",
+                            "options": [
+                                {
+                                    "id": "3",
+                                    "name": "hat"
+                                },
+                                {
+                                    "id": "4",
+                                    "name": "bag"
+                                }
+                            ],
+                            "required": False,
+                            "per_frame": False,
+                            "description": "",
+                            "render_value": False,
+                            "default_value": []
+                        }
+                    ],
+                    "constraints": {},
+                    "ai_class_map": [
+                        {
+                            "class_ids": [
+                                "1"
+                            ],
+                            "engine_id": "co_20200526"
+                        }
+                    ],
+                    "annotation_type": "box"
+                },
+                {
+                    "id": "1c4c4891-9382-496d-8895-a004d488b38e",
+                    "name": "Chair",
+                    "color": "#FE9573",
+                    "properties": [
+                        {
+                            "id": "f10903ce-2112-423f-adaf-c5042dc0f17e",
+                            "name": "color",
+                            "type": "free response",
+                            "blank": False,
+                            "per_frame": False,
+                            "constraints": {
+                                "digit": True,
+                                "space": True,
+                                "special": True,
+                                "alphabet": True
+                            },
+                            "description": "",
+                            "render_value": False,
+                            "default_value": ""
+                        }
+                    ],
+                    "constraints": {},
+                    "ai_class_map": [
+                        {
+                            "class_ids": [],
+                            "engine_id": ""
+                        }
+                    ],
+                    "annotation_type": "polygon"
+                }
+            ],
+            "annotation_types": [
+                "box",
+                "polygon"
+            ]
+        }
+    }
+    labelInfo = LabelInfo(label_interface_sample)
+    labelInfo.add_object(tracking_id=1, class_name='Person', annotations=[
+        {
+            'frame_num': 0,
+            'coord': {
+                "x": 1245.1356238698008,
+                "y": 355.4430379746835,
+                "width": 232.40506329113896,
+                "height": 482.386980108499
+            }
+        },
+        {
+            'frame_num': 1,
+            'coord': {
+                "x": 1032.2603978300176,
+                "y": 421.8444846292944,
+                "width": 199.20433996383372,
+                "height": 410.1265822784811
+            }
+        },
+    ], properties=[
+        {
+            "name": "identifiable",
+            "value": "true"
+        },
+        {
+            "name": "accessories",
+            "value": ["hat", "bag"]
+        },
+    ])
+    labelInfo.add_object(tracking_id=2, class_name='Chair', annotations=[
+        {
+            'frame_num': 0,
+            'coord': {
+                "points": [
+                    {
+                        "x": 723.6889692585893,
+                        "y": 207.0162748643761
+                    },
+                    {
+                        "x": 737.3598553345388,
+                        "y": 312.47739602169975
+                    },
+                    {
+                        "x": 706.1121157323688,
+                        "y": 310.52441229656415
+                    },
+                    {
+                        "x": 739.3128390596743,
+                        "y": 341.7721518987341
+                    },
+                    {
+                        "x": 737.3598553345388,
+                        "y": 363.254972875226
+                    },
+                    {
+                        "x": 883.8336347197104,
+                        "y": 357.3960216998191
+                    },
+                    {
+                        "x": 876.021699819168,
+                        "y": 322.2423146473779
+                    },
+                    {
+                        "x": 911.1754068716092,
+                        "y": 273.41772151898726
+                    },
+                    {
+                        "x": 838.9150090415911,
+                        "y": 298.8065099457504
+                    },
+                    {
+                        "x": 807.6672694394211,
+                        "y": 191.3924050632911
+                    }
+                ]
+            }
+        },
+    ], properties=[
+        {
+            "name": "color",
+            "value": "beige"
+        }
+    ])
+
+    import pprint
+    pprint.pprint(labelInfo.build_tags())
+    pprint.pprint(labelInfo.build_info())
+
 if __name__ == '__main__':
     # in a rush...
     test_build_label_info_from_scratch()
     test_build_label_info_with_result()
+    test_build_label_info_w_properties_from_scratch()
