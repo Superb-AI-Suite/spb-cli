@@ -120,7 +120,6 @@ class LabelInfo:
             ]
             return simple_objects
         except Exception as e:
-            print(e)
             return []
 
     def set_categories(self, frames=None, properties=None):
