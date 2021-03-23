@@ -23,6 +23,9 @@ jobs:
     - name: Install chardet dependency
       run: |
         pip3 install chardet
+    - name: Install colorama dependency
+      run: |
+        pip3 install colorama
     - name: Install dependencies
       run: |
         pipenv install --dev --system
