@@ -27,7 +27,18 @@ class Session:
         if not profile and not account_name and not access_key:
             profile = 'default'
 
-        if profile and not account_name and not access_key:
+        if account_name and access_key:
+            # To make credential
+            self.credential = {
+                'account_name': account_name,
+                'access_key': access_key
+            }
+        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv("SPB_ACCOUNT_NAME", None):
+            self.credential = {
+                'account_name': os.getenv("SPB_ACCOUNT_NAME"),
+                'access_key': os.getenv("SPB_ACCESS_KEY")
+            }
+        elif profile and not account_name and not access_key:
             credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
 
             # check exists credentials
@@ -36,24 +47,14 @@ class Session:
             config = self._read_config(credential_path=credential_path,
                                        profile=profile)  # get values from credential
             self.credential = config
-        elif profile and account_name and access_key:
-            # To make credential
-            self.credential = {
-                'account_name': account_name,
-                'access_key': access_key
-            }
-        else:
-            if account_name is None:
-                raise SDKInitiationFailedException(
-                    '** [ERROR] credential [account_name] does not exists')
-            if access_key is None:
-                raise SDKInitiationFailedException(
-                    '** [ERROR] credential [access_key] does not exists')
 
-            self.credential = {
-                'account_name': account_name,
-                'access_key': access_key,
-            }
+        if self.credential['account_name'] is None:
+            raise SDKInitiationFailedException(
+                '** [ERROR] credential [account_name] does not exists')
+        if self.credential['access_key'] is None:
+            raise SDKInitiationFailedException(
+                '** [ERROR] credential [access_key] does not exists')
+
         self.headers['X-API-KEY'] = self.credential['access_key']
         authorization_string = base64.b64encode(f'{self.credential["account_name"]}:{self.credential["access_key"]}'.encode("UTF-8"))
         self.headers['Authorization'] = f'Basic {authorization_string.decode("UTF-8")}'
