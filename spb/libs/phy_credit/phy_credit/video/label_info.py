@@ -2,7 +2,7 @@ from uuid import uuid4
 
 
 class LabelInfo:
-    _VERSION = '0.2.1-py'
+    _VERSION = '0.3.1-py'
 
     @classmethod
     def _set_properties(cls, properties_def, properties):
