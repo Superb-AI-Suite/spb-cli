@@ -2,7 +2,7 @@ import spb
 
 from .utils import *
 from .query import Query
-from spb.exceptions.exceptions import ModelInitiationFailedException
+from spb.exceptions import ModelInitiationFailedException
 
 class Manager(object):  # pylint: disable=R0205
     ''' Data mapper interface (generic repository) for models '''

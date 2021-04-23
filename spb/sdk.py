@@ -32,7 +32,11 @@ import glob
 import requests
 
 from natsort import natsorted
+from spb.labels import Label
 from spb.libs.phy_credit.phy_credit.video import LabelInfo
+from spb.labels.manager import LabelManager
+from spb.labels.label import Tags
+
 
 
 __author__ = spb.__author__
@@ -81,17 +85,17 @@ class Client(object):
     ##############################
 
     def get_num_data(self, tags=[], **kwargs):
-        command = spb.Command(type='describe_label')
+        manager = LabelManager()
         tags = [{'name': tag} for tag in tags]
         option = {'project_id': self._project.id, 'tags': tags, **kwargs}
-        _, num_data = spb.run(command=command, option=option, page=1, page_size=1)
+        num_data = manager.get_labels_count(**option)
 
         if num_data == 0:
             print('[WARNING] Data list is empty')
 
         return num_data
 
-    def get_data_page(self, page_idx, page_size=10, num_data=None, tags=[], **kwargs):
+    def get_data_page(self, page_idx, page_size=10, num_data=None, tags=[], dataset=None, data_key=None, **kwargs):
         if num_data is None:
             num_data = self.get_num_data(tags=tags, **kwargs)
 
@@ -110,10 +114,10 @@ class Client(object):
             for data in data_page:
                 yield VideoDataHandle(data, self._project)
         else:
-            command = spb.Command(type='describe_label')
+            manager = LabelManager()
             tags = [{'name': tag} for tag in tags]
             option = {'project_id': self._project.id, 'tags': tags, **kwargs}
-            data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
+            count, data_page = manager.get_labels(**option)
             for data in data_page:
                 yield DataHandle(data, self._project)
 
@@ -210,10 +214,6 @@ class DataHandle(object):
 
         return is_expired
 
-    def _upload_to_suite(self):
-        command = spb.Command(type='update_label')
-        _ = spb.run(command=command, option=self._data)
-
     ##############################
     # Immutable variables
     ##############################
@@ -292,7 +292,8 @@ class DataHandle(object):
         if 'objects' not in self._data.result:
             self._data.result['objects'] = []
         self._data.result = {**self._data.result, 'categorization': {'value': label_ids}}
-        self._upload_to_suite()
+        manager = LabelManager()
+        self._data = manager.update_label(project_id = self._data.project_id, id = self._data.id, result = self._data, )
 
     def set_object_labels(self, labels):
         if not self._data.result:
@@ -300,7 +301,19 @@ class DataHandle(object):
         if 'categorization' not in self._data.result:
             self._data.result['categorization'] = {'value': []}
         self._data.result = {**self._data.result, 'objects': labels}
-        self._upload_to_suite()
+        manager = LabelManager()
+        self._data = manager.update_label(project_id = self._data.project_id, id = self._data.id, result = self._data)
+
+    def set_tags(self, tags: list = None):
+        manager = LabelManager()
+        project_id = self._project.id
+        label_id = self._data.id
+
+        real_tags = []
+        if tags is not None and isinstance(tags, list):
+            for tag in tags:
+                real_tags.append(Tags(name=tag))
+        self._data = manager.update_label_tags(project_id = project_id, id = label_id, tags = real_tags)
 
 
 class VideoDataHandle(object):

@@ -4,7 +4,7 @@ from spb.orm.manager import Manager
 from spb.orm.type_base import Type
 from spb.orm.json_type import JsonObject
 from spb.orm.utils import *
-from spb.exceptions.exceptions import ModelInitiationFailedException
+from spb.exceptions import ModelInitiationFailedException
 
 class ModelMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):

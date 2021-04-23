@@ -65,7 +65,7 @@ class ProjectSummary(AttributeModel):
         self.objectDetection = ObjectDetection(
             **kwargs['objectDetection']) if 'objectDetection' in kwargs else ObjectDetection()
         self.imageCategorization = [ImageCategorization(
-            **item) for item in kwargs['imageCategorization']] if 'imageCategorization' in kwargs else []
+            name=item) for item in kwargs['imageCategorization']] if 'imageCategorization' in kwargs else []
 
 
 class Project(Model):
