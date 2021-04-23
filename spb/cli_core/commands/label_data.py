@@ -349,8 +349,8 @@ def _update_label(args):
             updated_label_info['created_at'] = None
             updated_label_info['last_updated_by'] = None
             updated_label_info['last_updated_at'] = None
-        elif updated_label_info.label_type=="MAIN_LABEL" and updated_label_info.consensus_status=="QUALIFIED":
-            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label_info.id)
+        elif updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="QUALIFIED":
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label.id)
             updated_label_info['related_labels_info'] = {
                 'related_labels_count': related_label_count
             }
