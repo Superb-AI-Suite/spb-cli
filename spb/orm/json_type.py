@@ -1,6 +1,6 @@
 import abc
 import json
-from spb.exceptions.exceptions import ImmutableValueChangeException, AttribureTypeException
+from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
 from .type_base import Type
 
 
@@ -10,7 +10,7 @@ class JsonObject(Type):
         if self._immutable:
             raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
         if value is not None and not type(value) == dict:
-            raise AttribureTypeException(f"'{self.attr_name}' need dictionary type value")
+            raise AttributeTypeException(f"'{self.attr_name}' need dictionary type value")
         return value
     def _serialize(self, value):
         if value == 'None' or value is None:

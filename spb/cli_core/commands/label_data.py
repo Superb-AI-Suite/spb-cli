@@ -14,7 +14,8 @@ from collections import ChainMap
 
 import spb
 from spb.cli_core.utils import recursive_glob_image_files, recursive_glob_label_files
-from spb.models.label import Label
+from spb.labels.label import Tags
+from spb.labels.manager import LabelManager 
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -24,6 +25,9 @@ LABEL_DESCRIBE_PAGE_SIZE = 10
 
 
 class LabelData():
+
+    def __init__(self):
+        self.label_manager = LabelManager()
 
     def upload_data(self, project, dataset_name, directory_path, include_label, is_forced):
         imgs_path = recursive_glob_image_files(directory_path)
@@ -56,7 +60,7 @@ class LabelData():
             if len(labels_path) != 0:
                 label_results = manager.list([manager.dict()]*len(labels_path))
                 with Pool(NUM_MULTI_PROCESS) as p:
-                    list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                    list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]*len(labels_path), labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
             else:
                 label_results = [{}]
 
@@ -82,7 +86,7 @@ class LabelData():
             manager = Manager()
             label_results = manager.list([manager.dict()]*len(labels_path))
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_update_label, zip(labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]* len(labels_path), labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
         else:
             label_results = [{}]
 
@@ -94,36 +98,44 @@ class LabelData():
         self._print_error_table(label_results=dict(label_results[0]))
 
     def download(self, project, directory_path, is_forced):
-        command = spb.Command(type='describe_label')
-        _, label_count = spb.run(command=command, option={
-            'project_id' : project.id
-        }, page_size = 1, page = 1)
+        # get data count
+        label_count, labels = self.label_manager.get_labels(project.id, label_type='DEFAULT', page=1, page_size=1)
+        # get labels count
+        total_label_count, labels = self.label_manager.get_labels(project.id, page=1, page_size=1)
+        #TODO : change get count for labels
+        # command = spb.Command(type='describe_label')
+        # _, label_count = spb.run(command=command, option={
+        #     'project_id' : project.id
+        # }, page_size = 1, page = 1)
         if label_count != 0:
             page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
             if not is_forced:
-                if not click.confirm(f"Downloading {label_count} data and {label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
+                if not click.confirm(f"Downloading {label_count} data and {total_label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
                     return
             manager = Manager()
             results = manager.list([manager.dict()]*page_length)
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_download_worker, zip([project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
+                list(tqdm.tqdm(p.imap(_download_worker, zip([self.label_manager]* page_length, [project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
 
             results = results[0]
             data_results = {}
             label_results = {}
+            total_success_labels_count = 0
             if len(results) > 0:
                 for key in results.keys():
-                    if 'data' in results[key]:
+                    results_error = results[key]['error']
+                    success_labels_count = results[key]['success_labels_count']
+                    total_success_labels_count+=success_labels_count
+                    if 'data' in results_error:
                         data_results[key] = results[key]['data']
-                    if 'label' in results[key]:
+                    if 'label' in results_error:
                         label_results[key] = results[key]['label']
         else:
             label_results = {}
             data_results = {}
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
-        label_success_count = label_count - len(label_results)
-        console.print(f'Successful download of {label_success_count} out of {label_count} labels. ({round(label_success_count/label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
+        console.print(f'Successful download of {total_success_labels_count} out of {total_label_count} labels. ({round(total_success_labels_count/total_label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
         data_success_count = label_count - len(data_results)
         console.print(f'Successful download of {data_success_count} out of {label_count} data. ({round(data_success_count/label_count*100,2)}%) - [b red]{len(data_results)} ERRORS[/b red]')
 
@@ -188,21 +200,59 @@ class LabelData():
 
 
 def _download_worker(args):
-    [project_id, page_idx, directory_path, result] = args
-    command = spb.Command(type='describe_label')
-    labels, _ = spb.run(command=command, option={
-        'project_id' : project_id
-    }, page_size = LABEL_DESCRIBE_PAGE_SIZE, page = page_idx + 1)
+    [label_manager, project_id, page_idx, directory_path, result] = args
+    # command = spb.Command(type='describe_label')
+    # labels, _ = spb.run(command=command, option={
+    #     'project_id' : project_id
+    # }, page_size = LABEL_DESCRIBE_PAGE_SIZE, page = page_idx + 1)
+    label_count, labels = label_manager.get_labels(project_id, label_type='DEFAULT', page=page_idx + 1, page_size=LABEL_DESCRIBE_PAGE_SIZE)
+    
     for label in labels:
+        success_labels_count = 0
         error = {}
         path = os.path.join(label.dataset, label.data_key[1:]) if label.data_key.startswith('/') else os.path.join(label.dataset, label.data_key)
         path = os.path.join(directory_path, path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         label_error = None
         data_error = None
+        label_info = label.to_json()
+        if label.label_type=="MAIN_LABEL" and label.consensus_status=="CREATED":
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, label.id)
+            label_info['related_labels_info'] = {
+                'related_labels_count': related_label_count
+            }
+            label_info['related_labels'] = {
+                'consensus_labeling' : [ related_label.to_json(include_project=False, include_data=False) for related_label in related_labels]
+            }
+            label_info['id'] = None
+            label_info['status'] = None
+            label_info['work_assignee'] = None
+            label_info['consensus_status'] = None
+            label_info['consistency_score'] = None
+            label_info['stats'] = None
+            label_info['tags'] = []
+            label_info['result'] = None
+            label_info['created_by'] = None
+            label_info['created_at'] = None
+            label_info['last_updated_by'] = None
+            label_info['last_updated_at'] = None
+            success_labels_count += related_label_count
+        elif label.label_type=="MAIN_LABEL" and label.consensus_status=="QUALIFIED":
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, label.id)
+            label_info['related_labels_info'] = {
+                'related_labels_count': related_label_count
+            }
+            label_info['related_labels'] = {
+                'consensus_labeling' : [ related_label.to_json(include_project=False, include_data=False) for related_label in related_labels]
+            }
+            success_labels_count += 1
+        elif label.label_type=="MAIN_LABEL" and label.consensus_status=="":
+            success_labels_count += 1
+
         try:
             label_json_path = f'{path}.json'
-            open(label_json_path, 'w').write(label.toJson())
+            with open(label_json_path, 'w') as input:
+                json.dump(label_info, input, indent=4)
         except Exception as e:
             error = {'label':str(e)}
             label_error = error
@@ -215,8 +265,8 @@ def _download_worker(args):
             error.update({'data':str(e)})
             data_error = error
 
+        result[f'{label.dataset}/{label.data_key}'] = {"error": error, "success_labels_count":success_labels_count}
         if len(error) > 0:
-            result[f'{label.dataset}/{label.data_key}'] = error
             if label_error:
                 _ = dict()
                 _set_error_result(f'{label.dataset}/{label.data_key}', _, str(label_error), label_error)
@@ -228,7 +278,7 @@ def _download_worker(args):
 def _upload_asset(args):
     logging.debug(f'Uploading Asset: {args}')
 
-    [project_id, asset_image, result] = args
+    [label_manager, project_id, asset_image, result] = args
     try:
         command = spb.Command(type='create_data')
         spb.run(command=command, option=asset_image, optional={'projectId': project_id})
@@ -238,37 +288,33 @@ def _upload_asset(args):
 
 
 def _update_label(args):
-    [label_path, project_id, dataset, result] = args
+    [label_manager, label_path, project_id, dataset, result] = args
     data_key = ".".join(label_path.split(".")[:-1])
     if not os.path.isfile(label_path):
         _set_error_result(data_key, result, 'Label json file is not existed.')
         return
 
-    option = {
-        'project_id': project_id,
-        'dataset': dataset,
-        'data_key': data_key
-    }
+    # option = {
+    #     'project_id': project_id,
+    #     'dataset': dataset,
+    #     'data_key': data_key
+    # }
     try:
-        command = spb.Command(type='describe_label')
-        described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
-        described_label = described_labels[0] if described_labels and described_labels[0] else None
+        # command = spb.Command(type='describe_label')
+        # described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
+        label_count, labels = label_manager.get_labels(project_id, label_type='DEFAULT', page=1, page_size=1, dataset=dataset, data_key=data_key)
+        described_label = labels[0] if label_count > 0 else None
         if described_label is None:
             _set_error_result(data_key, result, 'Label cannot be described.')
             return
-        if described_label.data_key != option['data_key'] and described_label.dataset != option['dataset']:
+        if described_label.data_key != data_key and described_label.dataset != dataset:
             _set_error_result(data_key, result, 'Described label does not match to upload.')
             return
     except Exception as e:
         _set_error_result(data_key, result, str(e), e)
         return
-    
-    label = {
-        "id": described_label.id,
-        "project_id": project_id,
-        "tags": [tag.get_datas(tag) for tag in described_label.tags],
-        "result": described_label.result,
-    }
+    update_tags = [Tags.get_data(tag) for tag in described_label.tags]
+    update_result = described_label.result
     try:
         with open(label_path) as json_file:
             json_data = json.load(json_file)
@@ -276,13 +322,43 @@ def _update_label(args):
             return
 
         if 'result' in json_data:
-            label['result'] = json_data['result']
+            update_result = json_data['result']
         if 'tags' in json_data:
-            label['tags'] = json_data['tags']
-        command = spb.Command(type='update_label')
-        label = spb.run(command=command, option=label)
-        with open(label_path, 'w') as f:
-            f.write(label.toJson())
+            update_tags = json_data['tags']
+        # command = spb.Command(type='update_label')
+        # label = spb.run(command=command, option=label)
+        updated_label = label_manager.update_label(project_id, described_label.id, result=update_result, tags=update_tags)
+        updated_label_info = updated_label.to_json()
+        if updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="CREATED":
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label.id)
+            updated_label_info['related_labels_info'] = {
+                'related_labels_count': related_label_count
+            }
+            updated_label_info['related_labels'] = {
+                'consensus_labeling' : [ related_label.to_json(include_project=False, include_data=False) for related_label in related_labels]
+            }
+            updated_label_info['id'] = None
+            updated_label_info['status'] = None
+            updated_label_info['work_assignee'] = None
+            updated_label_info['consensus_status'] = None
+            updated_label_info['consistency_score'] = None
+            updated_label_info['stats'] = None
+            updated_label_info['tags'] = []
+            updated_label_info['result'] = None
+            updated_label_info['created_by'] = None
+            updated_label_info['created_at'] = None
+            updated_label_info['last_updated_by'] = None
+            updated_label_info['last_updated_at'] = None
+        elif updated_label_info.label_type=="MAIN_LABEL" and updated_label_info.consensus_status=="QUALIFIED":
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label_info.id)
+            updated_label_info['related_labels_info'] = {
+                'related_labels_count': related_label_count
+            }
+            updated_label_info['related_labels'] = {
+                'consensus_labeling' : [ related_label.to_json(include_project=False, include_data=False) for related_label in related_labels]
+            }
+        with open(label_path, 'w') as input:
+            json.dump(updated_label_info, input, indent=4)
     except Exception as e:
         _set_error_result(data_key, result, str(e), e)
 

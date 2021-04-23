@@ -8,7 +8,7 @@ from spb.orm import Model
 from spb.orm import AttributeModel
 from spb.orm.utils import is_data_url, is_url
 from spb.orm.type import String, ID, Number, Object
-from spb.exceptions.exceptions import ImageIsNotExistsException
+from spb.exceptions import ImageDoesNotExistsException
 
 
 class Data(Model):

@@ -1,7 +1,7 @@
 import abc
 import json
 from uuid import UUID
-from spb.exceptions.exceptions import ImmutableValueChangeException, AttribureTypeException
+from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
 from .model import ListAttribute, AttributeModel
 from .type_base import Type
 
@@ -11,7 +11,7 @@ class Number(Type):
             raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
 
         if value is not None and not str(value).isdigit():
-            raise AttribureTypeException(f"'{self.attr_name}' need number type value")
+            raise AttributeTypeException(f"'{self.attr_name}' need number type value")
 
         return str(value)
 
@@ -34,7 +34,7 @@ class ID(Type):
                 if value != uuid_result:
                     raise ValueError
         except ValueError:
-            raise AttribureTypeException(f"'ID' can be UUID4 string")
+            raise AttributeTypeException(f"'ID' can be UUID4 string")
 
         return str(value)
 
@@ -51,7 +51,7 @@ class String(Type):
         if self._immutable:
             raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
         if value is not None and not isinstance(value, str):
-            raise AttribureTypeException(f"'{self.attr_name}' need string type value")
+            raise AttributeTypeException(f"'{self.attr_name}' need string type value")
 
         return str(value)
 
@@ -70,7 +70,7 @@ class Boolean(Type):
             raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
 
         if value is not None and not type(value) == bool:
-            raise AttribureTypeException(f"'{self.attr_name}' need boolean type value")
+            raise AttributeTypeException(f"'{self.attr_name}' need boolean type value")
 
         return str(value)
 
@@ -86,7 +86,7 @@ class List(Type):
         if self._immutable:
             raise ImmutableValueChangeException(f"'{self.attr_name}' cannot be changed")
         if value is not None and not type(value) == list:
-            raise AttribureTypeException(f"'{self.attr_name}' need list type value")
+            raise AttributeTypeException(f"'{self.attr_name}' need list type value")
         return value
     @classmethod
     def _type_to_query(cls, name, value):
@@ -105,14 +105,14 @@ class Object(Type):
         else:
             if issubclass(self._express, ListAttribute):
                 if not isinstance(value, list):
-                    raise AttribureTypeException(f"'{self.attr_name}' need list type value")
+                    raise AttributeTypeException(f"'{self.attr_name}' need list type value")
                 for item in value:
                     if not isinstance(item, self._express):
-                        raise AttribureTypeException(f"'{self.attr_name}' need empty list or adjust type value")
+                        raise AttributeTypeException(f"'{self.attr_name}' need empty list or adjust type value")
                 return value
             elif issubclass(self._express, AttributeModel):
                 if not isinstance(value, self._express):
-                    raise AttribureTypeException(f"'{self.attr_name}' need None or adjust type value")
+                    raise AttributeTypeException(f"'{self.attr_name}' need None or adjust type value")
                 return value
 
     @classmethod

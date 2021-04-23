@@ -29,7 +29,7 @@ import glob
 import importlib
 import threading
 from spb.orm.model import Model
-from spb.exceptions.exceptions import ResourceIsNotExistedException
+from spb.exceptions import ResourceIsNotExistedException
 
 
 class Loader(object):
