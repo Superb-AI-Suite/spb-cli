@@ -32,7 +32,7 @@ from spb.exceptions.exceptions import CommandInitiationFailedException
 
 
 __author__  = 'Super AI Dev Team'
-__version__ = '0.2.11'
+__version__ = '0.3.0'
 
 
 DEFAULT_SESSION = None
