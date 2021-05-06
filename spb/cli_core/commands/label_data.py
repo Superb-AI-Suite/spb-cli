@@ -14,8 +14,11 @@ from collections import ChainMap
 
 import spb
 from spb.cli_core.utils import recursive_glob_image_files, recursive_glob_label_files
+from spb.labels import Label
 from spb.labels.label import Tags
-from spb.labels.manager import LabelManager 
+from spb.labels.serializer import LabelInfoBuildParams
+from spb.labels.manager import LabelManager
+from spb.labels.label import WorkappType
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -49,7 +52,7 @@ class LabelData():
             data_results = manager.list([manager.dict()]*len(asset_images))
             console.print(f"Uploading data:")
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([project] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
         else:
             data_results = [{}]
 
@@ -60,7 +63,7 @@ class LabelData():
             if len(labels_path) != 0:
                 label_results = manager.list([manager.dict()]*len(labels_path))
                 with Pool(NUM_MULTI_PROCESS) as p:
-                    list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]*len(labels_path), labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                    list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]*len(labels_path), labels_path, [project]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
             else:
                 label_results = [{}]
 
@@ -86,7 +89,7 @@ class LabelData():
             manager = Manager()
             label_results = manager.list([manager.dict()]*len(labels_path))
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]* len(labels_path), labels_path, [project.id]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
+                list(tqdm.tqdm(p.imap(_update_label, zip([self.label_manager]* len(labels_path), labels_path, [project]*len(labels_path), [dataset_name]*len(labels_path), label_results)), total=len(labels_path)))
         else:
             label_results = [{}]
 
@@ -278,17 +281,17 @@ def _download_worker(args):
 def _upload_asset(args):
     logging.debug(f'Uploading Asset: {args}')
 
-    [label_manager, project_id, asset_image, result] = args
+    [label_manager, project, asset_image, result] = args
     try:
         command = spb.Command(type='create_data')
-        spb.run(command=command, option=asset_image, optional={'projectId': project_id})
+        spb.run(command=command, option=asset_image, optional={'projectId': project.id})
     except Exception as e:
         _set_error_result(asset_image['data_key'], result, str(e), e)
         pass
 
 
 def _update_label(args):
-    [label_manager, label_path, project_id, dataset, result] = args
+    [label_manager, label_path, project, dataset, result] = args
     data_key = ".".join(label_path.split(".")[:-1])
     if not os.path.isfile(label_path):
         _set_error_result(data_key, result, 'Label json file is not existed.')
@@ -302,7 +305,7 @@ def _update_label(args):
     try:
         # command = spb.Command(type='describe_label')
         # described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
-        label_count, labels = label_manager.get_labels(project_id, label_type='DEFAULT', page=1, page_size=1, dataset=dataset, data_key=data_key)
+        label_count, labels = label_manager.get_labels(project.id, label_type='DEFAULT', page=1, page_size=1, dataset=dataset, data_key=data_key)
         described_label = labels[0] if label_count > 0 else None
         if described_label is None:
             _set_error_result(data_key, result, 'Label cannot be described.')
@@ -320,17 +323,17 @@ def _update_label(args):
             json_data = json.load(json_file)
         if json_data['result'] is None:
             return
-
-        if 'result' in json_data:
-            update_result = json_data['result']
-        if 'tags' in json_data:
-            update_tags = json_data['tags']
-        # command = spb.Command(type='update_label')
-        # label = spb.run(command=command, option=label)
-        updated_label = label_manager.update_label(project_id, described_label.id, result=update_result, tags=update_tags)
+        label = Label(**json_data)
+        info_build_params = None
+        if label.workapp == WorkappType.IMAGE_SIESTA.value:
+            info_build_params = LabelInfoBuildParams(
+                label_interface = project.label_interface,
+                result = label.result
+            )
+        updated_label = label_manager.update_label(info_build_params = info_build_params, label=label)
         updated_label_info = updated_label.to_json()
         if updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="CREATED":
-            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label.id)
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project.id, updated_label.id)
             updated_label_info['related_labels_info'] = {
                 'related_labels_count': related_label_count
             }
@@ -350,7 +353,7 @@ def _update_label(args):
             updated_label_info['last_updated_by'] = None
             updated_label_info['last_updated_at'] = None
         elif updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="QUALIFIED":
-            related_label_count, related_labels = label_manager.get_related_labels_by_label(project_id, updated_label.id)
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project.id, updated_label_info.id)
             updated_label_info['related_labels_info'] = {
                 'related_labels_count': related_label_count
             }

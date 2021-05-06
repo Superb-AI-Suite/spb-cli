@@ -57,6 +57,11 @@ class CustomAPIException(APIException):
     super().__init__(message, code)
 
 
+class APIFormatException(APIException):
+  def __init__(self, message, code='000002'):
+    super().__init__(message, code)
+
+
 class ImmutableValueChangeException(SDKException):
   def __init__(self, message, code = '100000'):
     super().__init__(message, code)
