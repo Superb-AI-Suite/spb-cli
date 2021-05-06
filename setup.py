@@ -1,7 +1,7 @@
 import io
 from setuptools import setup, find_packages
 
-from spb import __version__
+from spb.sdk_config import SDK_VERSION, SDK_AUTHOR, SDK_AUTHOR_EMAIL, SDK_DESCRIPTION, SDK_LICENSE, SDK_NAME, SDK_URL
 
 
 # Read in the README for the long description on PyPI
@@ -12,13 +12,13 @@ def long_description():
 
 
 setup(
-    name="spb-cli",
-    version=__version__,
-    url="https://github.com/Superb-AI-Suite/spb-cli.git",
-    license="MIT",
-    author="Superb AI",
-    author_email="support@superb-ai.com",
-    description="Suite Standard Library",
+    name=SDK_NAME,
+    version=SDK_VERSION,
+    url=SDK_URL,
+    license=SDK_LICENSE,
+    author=SDK_AUTHOR,
+    author_email=SDK_AUTHOR_EMAIL,
+    description=SDK_DESCRIPTION,
     classifiers=[
         "Development Status :: 1 - Planning",
         "Intended Audience :: Developers",

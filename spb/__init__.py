@@ -25,28 +25,28 @@ import logging
 # import spb.exceptions
 
 from spb.session import Session
+from spb.core.session import BaseSession as CoreSession
 from spb.command import Command
 # from spb.spb_logger import SPBLogger
 from spb.spb_logger import create_logger
-from spb.exceptions.exceptions import CommandInitiationFailedException
+from spb.exceptions import CommandInitiationFailedException
+from spb.sdk_config import SDK_AUTHOR, SDK_VERSION, DEFAULT_SESSION, DEFAULT_CORE_SESSION
 
+__author__  = SDK_AUTHOR
+__version__ = SDK_VERSION
 
-__author__  = 'Super AI Dev Team'
-__version__ = '0.3.2'
-
-
-DEFAULT_SESSION = None
-logger = None
 
 __all__ = ('setup_default_session', '_get_default_session', 'client', 'run')
 
 def setup_default_session(**kwargs):
     global DEFAULT_SESSION
+    global DEFAULT_CORE_SESSION
     DEFAULT_SESSION = Session(**kwargs)
+    DEFAULT_CORE_SESSION = CoreSession(**kwargs)
 
 
 def _get_default_session(**kwargs):
-    if DEFAULT_SESSION is None:
+    if DEFAULT_SESSION is None or DEFAULT_CORE_SESSION is None:
         setup_default_session(**kwargs)
 
     return DEFAULT_SESSION

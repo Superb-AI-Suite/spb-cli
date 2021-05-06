@@ -35,8 +35,8 @@ from natsort import natsorted
 from spb.labels import Label
 from spb.libs.phy_credit.phy_credit.video import LabelInfo
 from spb.labels.manager import LabelManager
-from spb.labels.label import Tags
-
+from spb.labels.label import Tags, WorkappType
+from spb.labels.serializer import LabelInfoBuildParams
 
 
 __author__ = spb.__author__
@@ -46,8 +46,12 @@ __all__ = ('Client', 'DataHandle', 'VideoDataHandle')
 
 
 class Client(object):
-    def __init__(self, project_name=None):
+    def __init__(self, project_name=None, account_name: str = None, access_key: str = None):
         super().__init__()
+
+        if account_name is not None and access_key is not None:
+            print(f'[INFO] Usage: Client has been started with {account_name}')
+            spb.setup_default_session(account_name = account_name, access_key = access_key)
 
         if project_name is None:
             print('[WARNING] Specify the name of a project to be accessed')
@@ -62,6 +66,9 @@ class Client(object):
     ##############################
 
     def get_project_name(self):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return None
         return self._project.name
 
     ##############################
@@ -71,7 +78,6 @@ class Client(object):
     @classmethod
     def _get_project(cls, project_name):
         command = spb.Command(type='describe_project')
-
         projects, num_of_projects = spb.run(command=command, option={'name': project_name}, page=1, page_size=1)
 
         if num_of_projects == 0:
@@ -85,6 +91,10 @@ class Client(object):
     ##############################
 
     def get_num_data(self, tags=[], **kwargs):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return None
+
         manager = LabelManager()
         tags = [{'name': tag} for tag in tags]
         option = {'project_id': self._project.id, 'tags': tags, **kwargs}
@@ -200,9 +210,22 @@ class DataHandle(object):
     def __init__(self, data, project):
         super().__init__()
 
+        manager = LabelManager()
+        if data.project_id is None or data.id is None:
+            print('[ERROR] Data Handler cannot be initiated.')
+            return
         self._data = data
         self._project = project
         self._created = time.time()
+
+        if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+            self._init_label_build_info()
+
+    def _init_label_build_info(self):
+        self._label_build_params = LabelInfoBuildParams(
+            label_interface = self._project.label_interface,
+            result = self._data.result
+        )
 
     def _is_expired_image_url(self):
         global _IMAGE_URL_LIFETIME
@@ -254,20 +277,26 @@ class DataHandle(object):
         return skimage.io.imread(self._data.data_url)
 
     def get_category_labels(self):
-        category_map = self._project.label_interface['categorization']['word_map']
-        id_to_name = {c['id']: c['name'] for c in category_map if c['id'] != 'root'}
+        if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+            return self._label_build_params.get_categories()
+        else:
+            category_map = self._project.label_interface['categorization']['word_map']
+            id_to_name = {c['id']: c['name'] for c in category_map if c['id'] != 'root'}
 
-        try:
-            labels = [id_to_name[id] for id in self._data.result['categorization']['value']]
-        except:
-            # The given image does not have any image categorizations
-            labels = []
+            try:
+                labels = [id_to_name[id] for id in self._data.result['categorization']['value']]
+            except:
+                # The given image does not have any image categorizations
+                labels = []
 
-        return labels
+            return labels
 
     def get_object_labels(self):
         try:
-            labels = self._data.result['objects']
+            if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+                labels = self._label_build_params.get_objects()
+            else:
+                labels = self._data.result.get('objects', [])
         except:
             # The given image does not have any object annotations
             labels = []
@@ -277,43 +306,53 @@ class DataHandle(object):
     def get_tags(self):
         return [tag.name for tag in self._data.tags]
 
-    def set_category_labels(self, labels):
-        category_map = self._project.label_interface['categorization']['word_map']
-        name_to_id = {c['name']: c['id'] for c in category_map if c['id'] != 'root'}
+    def set_category_labels(self, labels:list = None, category:dict = None, properties:list = None, frames = None):
+        if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+            self._label_build_params.set_categories(frames=frames, properties=properties)
+        else:
+            category_map = self._project.label_interface['categorization']['word_map']
+            name_to_id = {c['name']: c['id'] for c in category_map if c['id'] != 'root'}
 
-        try:
-            label_ids = [name_to_id[name] for name in labels]
-        except KeyError:
-            print('[WARNING] Invalid category name exists')
-            return
+            try:
+                label_ids = [name_to_id[name] for name in labels]
+            except KeyError:
+                print('[WARNING] Invalid category name exists')
+                return
 
-        if not self._data.result:
-            self._data.result = {}
-        if 'objects' not in self._data.result:
-            self._data.result['objects'] = []
-        self._data.result = {**self._data.result, 'categorization': {'value': label_ids}}
-        manager = LabelManager()
-        self._data = manager.update_label(project_id = self._data.project_id, id = self._data.id, result = self._data, )
+            if not self._data.result:
+                self._data.result = {}
+            if 'objects' not in self._data.result:
+                self._data.result['objects'] = []
+            self._data.result = {**self._data.result, 'categorization': {'value': label_ids}}
 
     def set_object_labels(self, labels):
-        if not self._data.result:
-            self._data.result = {}
-        if 'categorization' not in self._data.result:
-            self._data.result['categorization'] = {'value': []}
-        self._data.result = {**self._data.result, 'objects': labels}
+        if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+            self._label_build_params.result = None
+            self._label_build_params.labels = labels
+        else:
+            if not self._data.result:
+                self._data.result = {}
+            if 'categorization' not in self._data.result:
+                self._data.result['categorization'] = {'value': []}
+            self._data.result = {**self._data.result, 'objects': labels}
+
+    def add_object_label(self, class_name, annotation, properties=None, id=None):
+        if self._label_build_params:
+            self._label_build_params.add_object(class_name, annotation, properties, id)
+
+    def update_data(self):
         manager = LabelManager()
-        self._data = manager.update_label(project_id = self._data.project_id, id = self._data.id, result = self._data)
+        build_parmas = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value and self._label_build_params is not None else None
+        self._data = manager.update_label(label=self._data, info_build_params=build_parmas)
 
     def set_tags(self, tags: list = None):
-        manager = LabelManager()
-        project_id = self._project.id
-        label_id = self._data.id
-
         real_tags = []
         if tags is not None and isinstance(tags, list):
             for tag in tags:
                 real_tags.append(Tags(name=tag))
-        self._data = manager.update_label_tags(project_id = project_id, id = label_id, tags = real_tags)
+
+        manager = LabelManager()
+        self._data = manager.update_label_tags(label=self._data, tags = real_tags)
 
 
 class VideoDataHandle(object):

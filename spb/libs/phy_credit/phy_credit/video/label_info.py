@@ -1,8 +1,8 @@
 from uuid import uuid4
+from .. import __version__
 
 
 class LabelInfo:
-    _VERSION = '0.3.1-py'
 
     @classmethod
     def _set_properties(cls, properties_def, properties):
@@ -182,7 +182,7 @@ class LabelInfo:
 
     def build_info(self):
         return {
-            'version': self._VERSION,
+            'version': __version__,
             'meta': {
                 'imageInfo': {},
                 'editInfo': {

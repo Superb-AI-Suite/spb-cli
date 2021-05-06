@@ -7,7 +7,7 @@ import base64
 
 from spb.command import Command
 from spb.models.project import Project
-from spb.exceptions.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException
+from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException
 
 class Session:
     endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
@@ -141,51 +141,44 @@ class Session:
         return response.get('data')
 
     def execute_mutation(self, model, query):
-        try:
-            data = self.execute(query)
-            if data is None:
-                return None
-            json_datas = None
-            json_datas = data[list(data.keys())[0]]
-            if json_datas is None:
-                raise APIException('Response doesnt have any data')
-            if isinstance(json_datas, list):
-                result = []
-                for json in json_datas:
-                    temp = self._json_to_model(model=model, args=json)
-                    result.append(temp)
-                return result
-            else:
-                return self._json_to_model(model=model, args=json_datas)
-        except Exception as e:
-            raise Exception(e.message)
+        data = self.execute(query)
+        if data is None:
+            return None
+        json_datas = None
+        json_datas = data[list(data.keys())[0]]
+        if json_datas is None:
+            raise APIException('Response doesnt have any data')
+        if isinstance(json_datas, list):
+            result = []
+            for json in json_datas:
+                temp = self._json_to_model(model=model, args=json)
+                result.append(temp)
+            return result
+        else:
+            return self._json_to_model(model=model, args=json_datas)
 
     def execute_query(self, model, query):
-        try:
-            data = self.execute(query)
-            if data is None:
-                return None
-            json_datas = None
-            json_datas = data[list(data.keys())[0]]
-            if json_datas is None:
-                raise APIException('Response doesnt have any data')
-            if isinstance(json_datas['edges'], list):
-                result = []
-                for json in json_datas['edges']:
-                    temp = self._json_to_model(model=model, args=json)
-                    result.append(temp)
-                if query.find('page') > -1 :
-                    return result, json_datas['count']
-                else:
-                    return result
+        data = self.execute(query)
+        if data is None:
+            return None
+        json_datas = None
+        json_datas = data[list(data.keys())[0]]
+        if json_datas is None:
+            raise APIException('Response doesnt have any data')
+        if isinstance(json_datas['edges'], list):
+            result = []
+            for json in json_datas['edges']:
+                temp = self._json_to_model(model=model, args=json)
+                result.append(temp)
+            if query.find('page') > -1 :
+                return result, json_datas['count']
             else:
-                if query.find('page') > -1 :
-                    return self._json_to_model(model=model, args=json_datas), json_datas['count']
-                else:
-                    return self._json_to_model(model=model, args=json_datas)
-        except Exception as e:
-            raise Exception(e.message)
-
+                return result
+        else:
+            if query.find('page') > -1 :
+                return self._json_to_model(model=model, args=json_datas), json_datas['count']
+            else:
+                return self._json_to_model(model=model, args=json_datas)
 
     def _json_to_model(self, model, args):
         try:
