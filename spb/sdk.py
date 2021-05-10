@@ -342,8 +342,8 @@ class DataHandle(object):
 
     def update_data(self):
         manager = LabelManager()
-        build_parmas = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value and self._label_build_params is not None else None
-        self._data = manager.update_label(label=self._data, info_build_params=build_parmas)
+        build_params = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value and self._label_build_params is not None else None
+        self._data = manager.update_label(label=self._data, info_build_params=build_params)
 
     def set_tags(self, tags: list = None):
         real_tags = []

@@ -26,6 +26,7 @@ python-datauri = "*"
 click = "*"
 boto3 = "*"
 scikit-image = "*"
+natsort = "*"
 
 [requires]
 python_version = "3.7"

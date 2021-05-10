@@ -76,9 +76,9 @@ class LabelData():
             success_label_count=len(labels_path)-len(label_results[0])
             label_success_ratio = round(success_label_count/len(labels_path)*100,2) if len(label_results[0]) != 0 else 100
             console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({label_success_ratio}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
-            self._print_error_table(dict(data_results[0]), dict(label_results[0]))
+            self._print_error_table(data_error_results=dict(data_results[0]), label_error_results=dict(label_results[0]))
         else:
-            self._print_error_table(data_results=dict(data_results[0]))
+            self._print_error_table(data_error_results=dict(data_results[0]))
 
     def upload_label(self, project, dataset_name, directory_path, is_forced):
         labels_path = recursive_glob_label_files(directory_path)
@@ -98,11 +98,16 @@ class LabelData():
         success_label_ratio = round(success_label_count/len(labels_path)*100,2) if len(labels_path) != 0 else 100
         console.print(f'Successful upload of {success_label_count} out of {len(labels_path)} labels. ({success_label_ratio}%) - [b red]{len(label_results[0])} ERRORS[/b red]')
 
-        self._print_error_table(label_results=dict(label_results[0]))
+        self._print_error_table(label_error_results=dict(label_results[0]))
 
     def download(self, project, directory_path, is_forced):
+        process_results = []
+        success_data_count = 0
+        success_labels_count = 0
+        data_error_results = {}
+        label_error_results = {}
         # get data count
-        label_count, labels = self.label_manager.get_labels(project.id, label_type='DEFAULT', page=1, page_size=1)
+        main_label_count, labels = self.label_manager.get_labels(project.id, label_type='DEFAULT', page=1, page_size=1)
         # get labels count
         total_label_count, labels = self.label_manager.get_labels(project.id, page=1, page_size=1)
         #TODO : change get count for labels
@@ -110,54 +115,56 @@ class LabelData():
         # _, label_count = spb.run(command=command, option={
         #     'project_id' : project.id
         # }, page_size = 1, page = 1)
-        if label_count != 0:
-            page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
+        if main_label_count != 0:
+            page_length = int(main_label_count/LABEL_DESCRIBE_PAGE_SIZE) if main_label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(main_label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
             if not is_forced:
-                if not click.confirm(f"Downloading {label_count} data and {total_label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
+                if not click.confirm(f"Downloading {main_label_count} data and {total_label_count} labels from project '{project.name}' to '{directory_path}'. Proceed?"):
                     return
             manager = Manager()
-            results = manager.list([manager.dict()]*page_length)
+            label_results_dict = manager.dict()
+            label_results = manager.list([label_results_dict]*page_length)
+            process_results = manager.list(range(page_length))
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_download_worker, zip([self.label_manager]* page_length, [project.id] * page_length, range(page_length), [directory_path] * page_length, results)), total=page_length))
+                list(tqdm.tqdm(p.imap(_download_worker, zip([self.label_manager]* page_length, [project.id] * page_length, range(page_length), [directory_path] * page_length, label_results, [process_results] * page_length)), total=page_length))
 
-            results = results[0]
-            data_results = {}
-            label_results = {}
-            total_success_labels_count = 0
-            if len(results) > 0:
-                for key in results.keys():
-                    results_error = results[key]['error']
-                    success_labels_count = results[key]['success_labels_count']
-                    total_success_labels_count+=success_labels_count
-                    if 'data' in results_error:
-                        data_results[key] = results[key]['data']
-                    if 'label' in results_error:
-                        label_results[key] = results[key]['label']
-        else:
-            label_results = {}
-            data_results = {}
+            for key in label_results_dict.keys():
+                results_error = label_results_dict[key]['error']
+                success_data_count += 1
+                success_labels_count += label_results_dict[key]['success_labels_count']
+                if 'data' in results_error:
+                    data_error_results[key] = results_error['data']
+                if 'label' in results_error:
+                    label_error_results[key] = results_error['label']
+
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
-        console.print(f'Successful download of {total_success_labels_count} out of {total_label_count} labels. ({round(total_success_labels_count/total_label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
-        data_success_count = label_count - len(data_results)
-        console.print(f'Successful download of {data_success_count} out of {label_count} data. ({round(data_success_count/label_count*100,2)}%) - [b red]{len(data_results)} ERRORS[/b red]')
+        console.print(f'Successful download of {success_labels_count} out of {total_label_count} labels. ({round(success_labels_count/total_label_count*100,2)}%) - [b red]{total_label_count - success_labels_count} ERRORS[/b red]')
+        console.print(f'Successful download of {success_data_count} out of {main_label_count} data. ({round(success_data_count/main_label_count*100,2)}%) - [b red]{main_label_count - success_data_count} ERRORS[/b red]')
 
-        self._print_error_table(label_results=label_results, data_results=data_results)
+        # TODO: Need to refactor Get Labels API Fail Logic
+        for process_result in process_results:
+            is_process_fail = False
+            if not process_result:
+                is_process_fail = True
+        if is_process_fail:
+            console.print(f'[b red]Failed Download Labels from API. Please retry download.[/b red]')
 
-    def _print_error_table(self, data_results = None, label_results = None):
+        self._print_error_table(data_error_results=data_error_results, label_error_results=label_error_results, )
+
+    def _print_error_table(self, data_error_results = None, label_error_results = None):
         results = {}
 
-        if isinstance(data_results, dict):
-            for key in data_results:
+        if isinstance(data_error_results, dict):
+            for key in data_error_results:
                 results[key] = {}
-                results[key]['data'] = data_results[key]
+                results[key]['data'] = data_error_results[key]
                 results[key]['label'] = None
-        if isinstance(label_results, dict):
-            for key in label_results:
+        if isinstance(label_error_results, dict):
+            for key in label_error_results:
                 if key in results:
-                    results[key]['label'] = label_results[key]
+                    results[key]['label'] = label_error_results[key]
                 else:
-                    results[key] = {'label':label_results[key], 'data':None}
+                    results[key] = {'label':label_error_results[key], 'data':None}
 
         if not next(iter(results), None):
                 return
@@ -167,20 +174,20 @@ class LabelData():
         while True:
             table = rich.table.Table(show_header=True, header_style="bold magenta")
             table.add_column("FILE NAME")
-            if isinstance(data_results, dict):
+            if isinstance(data_error_results, dict):
                 table.add_column("DATA UPLOAD")
-            if isinstance(label_results, dict):
+            if isinstance(label_error_results, dict):
                 table.add_column("LABEL UPLOAD")
 
             for _ in range(10):
                 key = next(iter(results), None)
                 if not key:
                     break
-                if isinstance(data_results, dict) and isinstance(label_results, dict):
+                if isinstance(data_error_results, dict) and isinstance(label_error_results, dict):
                     data = results[key]['data']
                     label = results[key]['label']
                     table.add_row(key, f"{data if data else '-'}", f"{label if label else '-'}")
-                elif isinstance(data_results, dict):
+                elif isinstance(data_error_results, dict):
                     data = results[key]['data']
                     table.add_row(key, f"{data if data else '-'}")
                 else:
@@ -203,12 +210,19 @@ class LabelData():
 
 
 def _download_worker(args):
-    [label_manager, project_id, page_idx, directory_path, result] = args
+    [label_manager, project_id, page_idx, directory_path, label_results_dict, process_results] = args
     # command = spb.Command(type='describe_label')
     # labels, _ = spb.run(command=command, option={
     #     'project_id' : project_id
     # }, page_size = LABEL_DESCRIBE_PAGE_SIZE, page = page_idx + 1)
-    label_count, labels = label_manager.get_labels(project_id, label_type='DEFAULT', page=page_idx + 1, page_size=LABEL_DESCRIBE_PAGE_SIZE)
+    labels = []
+    try:
+        label_count, labels = label_manager.get_labels(project_id, label_type='DEFAULT', page=page_idx + 1, page_size=LABEL_DESCRIBE_PAGE_SIZE)
+    except Exception as e:
+        process_results[page_idx] = False
+        # error = {'label':str(e)}
+        # _set_error_result(f'Failed Get Labels', dict(), str(error), error)
+        return
     
     for label in labels:
         success_labels_count = 0
@@ -248,7 +262,7 @@ def _download_worker(args):
             label_info['related_labels'] = {
                 'consensus_labeling' : [ related_label.to_json(include_project=False, include_data=False) for related_label in related_labels]
             }
-            success_labels_count += 1
+            success_labels_count += (related_label_count+1)
         elif label.label_type=="MAIN_LABEL" and label.consensus_status=="":
             success_labels_count += 1
 
@@ -268,7 +282,7 @@ def _download_worker(args):
             error.update({'data':str(e)})
             data_error = error
 
-        result[f'{label.dataset}/{label.data_key}'] = {"error": error, "success_labels_count":success_labels_count}
+        label_results_dict[f'{label.dataset}/{label.data_key}'] = {"error": error, "success_labels_count":success_labels_count}
         if len(error) > 0:
             if label_error:
                 _ = dict()
@@ -276,6 +290,7 @@ def _download_worker(args):
             if data_error:
                 _ = dict()
                 _set_error_result(f'{label.dataset}/{label.data_key}', _, str(data_error), data_error)
+    process_results[page_idx] = True
 
 
 def _upload_asset(args):
@@ -323,14 +338,14 @@ def _update_label(args):
             json_data = json.load(json_file)
         if json_data['result'] is None:
             return
-        label = Label(**json_data)
         info_build_params = None
-        if label.workapp == WorkappType.IMAGE_SIESTA.value:
+        described_label.result = json_data['result']
+        if described_label.workapp == WorkappType.IMAGE_SIESTA.value:
             info_build_params = LabelInfoBuildParams(
                 label_interface = project.label_interface,
-                result = label.result
+                result = json_data['result']
             )
-        updated_label = label_manager.update_label(info_build_params = info_build_params, label=label)
+        updated_label = label_manager.update_label(info_build_params = info_build_params, label=described_label)
         updated_label_info = updated_label.to_json()
         if updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="CREATED":
             related_label_count, related_labels = label_manager.get_related_labels_by_label(project.id, updated_label.id)
@@ -353,7 +368,7 @@ def _update_label(args):
             updated_label_info['last_updated_by'] = None
             updated_label_info['last_updated_at'] = None
         elif updated_label.label_type=="MAIN_LABEL" and updated_label.consensus_status=="QUALIFIED":
-            related_label_count, related_labels = label_manager.get_related_labels_by_label(project.id, updated_label_info.id)
+            related_label_count, related_labels = label_manager.get_related_labels_by_label(project.id, updated_label.id)
             updated_label_info['related_labels_info'] = {
                 'related_labels_count': related_label_count
             }
