@@ -125,6 +125,9 @@ class LabelManager(BaseManager):
 
         try:
             read_response = requests.get(label.info_read_presigned_url)
+            if read_response.status_code == requests.codes.not_found:
+                label.result = None
+                return label
             read_response.raise_for_status()
             label.result = read_response.json().get('result', {})
             return label
