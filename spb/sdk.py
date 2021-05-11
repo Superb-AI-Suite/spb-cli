@@ -129,7 +129,7 @@ class Client(object):
             option = {
                 'project_id': self._project.id,
                 'tags': tags,
-                'page':page_idx,
+                'page':page_idx+1,
                 'page_size': page_size,
                 'dataset': dataset,
                 'data_key': data_key,
