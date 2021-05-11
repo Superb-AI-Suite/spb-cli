@@ -126,7 +126,15 @@ class Client(object):
         else:
             manager = LabelManager()
             tags = [{'name': tag} for tag in tags]
-            option = {'project_id': self._project.id, 'tags': tags, **kwargs}
+            option = {
+                'project_id': self._project.id,
+                'tags': tags,
+                'page':page_idx,
+                'page_size': page_size,
+                'dataset': dataset,
+                'data_key': data_key,
+                **kwargs
+            }
             count, data_page = manager.get_labels(**option)
             for data in data_page:
                 yield DataHandle(data, self._project)
