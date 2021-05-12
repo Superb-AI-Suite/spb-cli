@@ -1,22 +1,28 @@
 import click
+import configparser
 import rich
 import rich.table
 import rich.console
 import os
 
 import spb
-from spb.cli_core.helper import Helper
 from spb.session import Session
 
+helper = None
 console = rich.console.Console()
-helper = Helper()
 
+def _initiation_cli():
+
+    from spb.cli_core.helper import Helper
+
+    global helper
+    helper = Helper()
+    spb.client()
 
 @click.group()
 @click.version_option(version=spb.__version__, message='%(version)s')
 def cli():
     pass
-
 
 @cli.command()
 # @click.option('--profile_name', prompt='Profile Name', default='default')]
@@ -26,15 +32,37 @@ def cli():
 def configure(account_name, access_key, list_flag):
     """Config your CREDENTIALS(Profile Name, Access Key)"""
     profile_name = 'default'
+
     if list_flag:
-        helper.list_config(profile_name)
+        credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
+        try:
+            with open(credential_path, 'r') as f:
+                print(f.read())
+        except:
+            console.print( "Credential is not configured. Plz, Config your credential first.")
         return
 
     if account_name is None:
         account_name = click.prompt('Suite Account Name', type=str)
     if access_key is None:
         access_key = click.prompt('Access Key', type=str)
-    helper.set_config(profile_name, account_name, access_key)
+
+    credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
+    credential_dir = (os.sep).join(credential_path.split(os.sep)[:-1])
+
+    os.makedirs(credential_dir, exist_ok=True)
+
+    config_parser = configparser.ConfigParser()
+    config_parser.read(credential_path)
+    config_parser[profile_name] = {
+        'account_name': account_name,
+        'access_key': access_key,
+    }
+
+    with open(credential_path, 'w') as f:
+        config_parser.write(f)
+
+    console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with account name '{account_name}'.")
 
 @cli.group()
 def describe():
@@ -106,8 +134,6 @@ def labels(project_name, dataset_name, directory_path, is_forced):
     elif project.workapp.startswith('image'):
         helper.upload_label(project, dataset_name, directory_path, is_forced=is_forced)
 
-
-
 @cli.command()
 @click.option('-d', '--dir', 'directory_path', default='.', help='Target directory path (default=[./])')
 @click.option('-p', '--project', 'project_name', help='Target project name')
@@ -118,16 +144,15 @@ def download(project_name, directory_path, is_forced):
     project = _get_project_with_name(project_name)
     if not project:
         return
-    
+
     if project.workapp.startswith('video'):
         helper.download_video(project, directory_path, is_forced=is_forced)
     elif project.workapp.startswith('image'):
         helper.download(project, directory_path, is_forced=is_forced)
 
-
 @cli.command()
 def version():
-    click.echo(spb.__version__)
+    click.echo(spb.sdk_config.SDK_VERSION)
 
 def _get_project_with_name(project_name):
     project = None
@@ -141,6 +166,3 @@ def _get_project_with_name(project_name):
         else:
             break
     return project
-
-def _initiation_cli():
-    spb.client()
