@@ -16,7 +16,8 @@ def _initiation_cli():
     from spb.cli_core.helper import Helper
 
     global helper
-    helper = Helper()
+    if helper is None:
+        helper = Helper()
     spb.client()
 
 @click.group()
