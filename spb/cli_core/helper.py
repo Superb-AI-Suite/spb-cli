@@ -15,30 +15,6 @@ class Helper:
     label_data = LabelData()
     video_label_data = VideoLabelData()
 
-    def set_config(self, profile_name, account_name, access_key):
-        credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
-        credential_dir = (os.sep).join(credential_path.split(os.sep)[:-1])
-
-        os.makedirs(credential_dir, exist_ok=True)
-
-        config_parser = configparser.ConfigParser()
-        config_parser.read(credential_path)
-        config_parser[profile_name] = {
-            'account_name': account_name,
-            'access_key': access_key,
-        }
-
-        with open(credential_path, 'w') as f:
-            config_parser.write(f)
-
-        console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with account name '{account_name}'.")
-
-    def list_config(self, profile_name):
-        credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
-
-        with open(credential_path, 'r') as f:
-            print(f.read())
-
     def init_project(self, directory_path, project):
         return self.project.init_project(directory_path, project)
 
