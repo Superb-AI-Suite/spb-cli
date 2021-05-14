@@ -52,7 +52,7 @@ class LabelData():
             data_results = manager.list([manager.dict()]*len(asset_images))
             console.print(f"Uploading data:")
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_upload_asset, zip([project] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([self.label_manager]*len(asset_images), [project] * len(asset_images), asset_images, data_results)), total=len(asset_images)))
         else:
             data_results = [{}]
 
