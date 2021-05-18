@@ -7,6 +7,9 @@ class CustomBaseException(Exception):
         self.message = message
         self.code = code
 
+    def __str__(self):
+      return f"[{self.code}] {self.message}"
+
 
 class SDKException(CustomBaseException):
     def __init__(self, message, code='200400'):
