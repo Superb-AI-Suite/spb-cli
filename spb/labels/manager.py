@@ -122,6 +122,8 @@ class LabelManager(BaseManager):
     def get_label_info_from_url(self, label: Label = None):
         if label.workapp != WorkappType.IMAGE_SIESTA.value:
             return label
+        elif label.info_read_presigned_url is None:
+            return label
 
         try:
             read_response = requests.get(label.info_read_presigned_url)
