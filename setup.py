@@ -31,7 +31,7 @@ setup(
     long_description=long_description(),
     long_description_content_type="text/markdown",
     install_requires=[
-        "bleach==3.1.5",
+        "bleach==3.3.0",
         "certifi==2020.4.5.2",
         "chardet>=3.0.2,<3.1.0",
         "click==7.1.2",
