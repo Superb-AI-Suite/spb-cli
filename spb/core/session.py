@@ -23,22 +23,33 @@ class BaseSession:
         self._set_credential(profile, account_name, access_key)
 
     def _set_credential(self, profile='default', account_name=None, access_key=None):
-
         if account_name and access_key:
             # To make credential
             self.credential = {
                 'account_name': account_name,
                 'access_key': access_key
             }
-        elif not account_name or not access_key:
+        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv("SPB_ACCOUNT_NAME", None):
+            self.credential = {
+                'account_name': os.getenv("SPB_ACCOUNT_NAME"),
+                'access_key': os.getenv("SPB_ACCESS_KEY")
+            }
+        elif profile and not account_name and not access_key:
             credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
 
             # check exists credentials
-            if not os.path.exists(credential_path):
-                raise SDKInitiationFailedException('** [ERROR] credentials file does not exists')
+            assert os.path.exists(credential_path), SDKInitiationFailedException(
+                '** [ERROR] credentials file does not exists')
             config = self._read_config(credential_path=credential_path,
                                        profile=profile)  # get values from credential
             self.credential = config
+
+        if self.credential['account_name'] is None:
+            raise SDKInitiationFailedException(
+                '** [ERROR] credential [account_name] does not exists')
+        if self.credential['access_key'] is None:
+            raise SDKInitiationFailedException(
+                '** [ERROR] credential [access_key] does not exists')
 
         self.headers['X-API-KEY'] = self.credential['access_key']
         authorization_string = base64.b64encode(f'{self.credential["account_name"]}:{self.credential["access_key"]}'.encode("UTF-8"))

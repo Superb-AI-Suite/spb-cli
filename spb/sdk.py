@@ -30,14 +30,16 @@ import boto3
 import json
 import glob
 import requests
+import logging
 
 from natsort import natsorted
 from spb.labels import Label
-from spb.libs.phy_credit.phy_credit.video import LabelInfo
+from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.labels.manager import LabelManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.serializer import LabelInfoBuildParams
 
+logger = logging.getLogger()
 
 __author__ = spb.__author__
 __version__ = spb.__version__
@@ -314,9 +316,13 @@ class DataHandle(object):
     def get_tags(self):
         return [tag.name for tag in self._data.tags]
 
-    def set_category_labels(self, labels:list = None, category:dict = None, properties:list = None, frames = None):
+    def set_category_labels(self, labels:list = None, category:dict = None, properties = None):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
-            self._label_build_params.set_categories(frames=frames, properties=properties)
+            self._label_build_params.set_categories(properties=properties)
+            self._data.result = {
+                **self._data.result,
+                'categories': self._label_build_params.build_info().get('categories', {'properties':[]})
+            }
         else:
             category_map = self._project.label_interface['categorization']['word_map']
             name_to_id = {c['name']: c['id'] for c in category_map if c['id'] != 'root'}
@@ -336,7 +342,9 @@ class DataHandle(object):
     def set_object_labels(self, labels):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
             self._label_build_params.result = None
-            self._label_build_params.labels = labels
+            for label in labels:
+                self._label_build_params.add_object(**label)
+            self._data.result = self._label_build_params.build_info().get('objects', {'objects':[]})
         else:
             if not self._data.result:
                 self._data.result = {}
@@ -345,13 +353,17 @@ class DataHandle(object):
             self._data.result = {**self._data.result, 'objects': labels}
 
     def add_object_label(self, class_name, annotation, properties=None, id=None):
-        if self._label_build_params:
+        if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
             self._label_build_params.add_object(class_name, annotation, properties, id)
+        elif self._data.workapp == WorkappType.IMAGE_DEFAULT.value:
+            print('[ERROR] add_object_list doesn\'t support.')
 
     def update_data(self):
         manager = LabelManager()
-        build_params = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value and self._label_build_params is not None else None
+        build_params = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value else None
         self._data = manager.update_label(label=self._data, info_build_params=build_params)
+        if build_params is not None:
+            self._init_label_build_info()
 
     def set_tags(self, tags: list = None):
         real_tags = []
@@ -459,9 +471,9 @@ class VideoDataHandle(object):
     def set_object_labels(self, labels):
         result = self._get_result()
         if result is None:
-            label_info = LabelInfo(self._project.label_interface)
+            label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = LabelInfo(self._project.label_interface, result=result)
+            label_info = build_label_info(self._project.label_interface, result=result)
             label_info.init_objects()
 
         for label in labels:
@@ -475,15 +487,15 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = LabelInfo(self._project.label_interface, result=result)
+        label_info = build_label_info(self._project.label_interface, result=result)
         return label_info.get_objects()
 
     def set_category_labels(self, label):
         result = self._get_result()
         if result is None:
-            label_info = LabelInfo(self._project.label_interface)
+            label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = LabelInfo(self._project.label_interface, result=result)
+            label_info = build_label_info(self._project.label_interface, result=result)
             label_info.init_categories()
 
         label_info.set_categories(**label)
@@ -496,7 +508,7 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = LabelInfo(self._project.label_interface, result=result)
+        label_info = build_label_info(self._project.label_interface, result=result)
         return label_info.get_categories()
 
     def get_tags(self):

@@ -80,11 +80,9 @@ class LabelManager(BaseManager):
 
         self.query.response_attrs.extend(label.get_property_names())
         self.query.required_attrs.extend(label.get_property_names(include=['project_id']))
-        try:
-            query, values = self.query.build_query()
-            response = self.session.execute(query, values)
-        except Exception as e:
-            raise e
+        query, values = self.query.build_query()
+        response = self.session.execute(query, values)
+
         count, data = self.session.get_count_and_data_from_response(response, 'labels')
         labels = []
         for item in data:

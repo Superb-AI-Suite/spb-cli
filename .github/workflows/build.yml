@@ -26,9 +26,9 @@ jobs:
     - name: Install dependencies
       run: |
         pipenv install --dev --system
-    - name: Check if Pipfile and setup.py is sane
-      run: |
-        pipenv-setup check
+    # - name: Check if Pipfile and setup.py is sane
+    #   run: |
+    #     pipenv-setup check
     - name: Install
       run: |
         python setup.py install

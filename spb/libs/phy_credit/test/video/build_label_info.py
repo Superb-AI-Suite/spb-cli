@@ -1,4 +1,5 @@
-from phy_credit.video import LabelInfo
+from phy_credit.video import build_label_info
+
 
 def test_build_label_info_from_scratch():
     label_interface_sample = {
@@ -48,7 +49,7 @@ def test_build_label_info_from_scratch():
             ]
         }
     }
-    labelInfo = LabelInfo(label_interface_sample)
+    labelInfo = build_label_info(label_interface_sample)
     labelInfo.add_object(tracking_id=1, class_name='Person', annotations=[
         {
             'frame_num': 0,
@@ -171,7 +172,7 @@ def test_build_label_info_with_result():
             ]
         }
     }
-    labelInfo = LabelInfo(
+    labelInfo = build_label_info(
         label_interface_sample,
         result={
             "objects": [
@@ -440,7 +441,7 @@ def test_build_label_info_w_properties_from_scratch():
             ]
         }
     }
-    labelInfo = LabelInfo(label_interface_sample)
+    labelInfo = build_label_info(label_interface_sample)
     labelInfo.add_object(tracking_id=1, class_name='Person', annotations=[
         {
             'frame_num': 0,

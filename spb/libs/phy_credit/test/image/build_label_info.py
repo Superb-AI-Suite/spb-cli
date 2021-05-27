@@ -1,11 +1,11 @@
-from phy_credit.imageV2 import LabelInfo
+from phy_credit.imageV2 import build_label_info
 import json
 
 
 def test_build_label_info_from_scratch():
     label_interface_sample = {
         "type": "image-siesta",
-        "version": "v0.2.6",
+        "version": "0.2.6",
         "data_type": "image",
         "categorization": {
             "properties": [
@@ -446,7 +446,7 @@ def test_build_label_info_from_scratch():
             ]
         }
     }
-    labelInfo = LabelInfo(label_interface_sample)
+    labelInfo = build_label_info(label_interface_sample)
     labelInfo.add_object(class_name='bb', annotation={
             "coord": {
                 "x": 173,
@@ -685,7 +685,7 @@ def test_build_label_info_from_scratch():
 def test_build_label_info_from_result():
     label_interface_sample = {
         "type": "image-siesta",
-        "version": "v0.2.6",
+        "version": "0.2.6",
         "data_type": "image",
         "categorization": {
             "properties": [
@@ -1126,7 +1126,7 @@ def test_build_label_info_from_result():
             ]
         }
     }
-    labelInfo = LabelInfo(label_interface_sample, result={
+    labelInfo = build_label_info(label_interface_sample, result={
         "objects": [
             {
                 "id": "e0d133c5-7089-465a-8f05-ec5fecccd8ba",
@@ -1154,10 +1154,10 @@ def test_build_label_info_from_result():
                     {
                         "propertyId": "f7eebc07-155b-48f3-847d-5501668044ad",
                         "propertyName": "ps",
-                        "optionId": [
+                        "optionIds": [
                             "3"
                         ],
-                        "optionName": [
+                        "optionNames": [
                             "1"
                         ]
                     }
@@ -1189,11 +1189,11 @@ def test_build_label_info_from_result():
                     {
                         "propertyId": "f7eebc07-155b-48f3-847d-5501668044ad",
                         "propertyName": "ps",
-                        "optionId": [
+                        "optionIds": [
                             "4",
                             "3"
                         ],
-                        "optionName": [
+                        "optionNames": [
                             "2",
                             "1"
                         ]
@@ -1411,11 +1411,11 @@ def test_build_label_info_from_result():
                 {
                     "propertyId": "root",
                     "propertyName": "Root",
-                    "optionId": [
+                    "optionIds": [
                         "cd0df355-75f3-48c0-977a-8f2b7cd8197b",
                         "de5f7920-e9bc-441f-b4c0-3ebd8fe7013a"
                     ],
-                    "optionName": [
+                    "optionNames": [
                         "b",
                         "c"
                     ]
@@ -1428,7 +1428,185 @@ def test_build_label_info_from_result():
     print(json.dumps(labelInfo.build_info()))
 
 
+def test_build_label_info_from_scratch_v4():
+    label_interface_sample = {
+        "type": "image-siesta",
+        "version": "0.4.0",
+        "data_type": "image",
+        "categorization": {
+            "properties": [
+                {
+                    "id": "root",
+                    "name": "Root",
+                    "type": "checkbox",
+                    "options": [
+                        {
+                            "id": "f2c19b26-37fa-4b74-baaf-1105a4b51841",
+                            "name": "alphabet",
+                            "children": [
+                                {
+                                    "id": "b2ad46b3-ab05-41e1-be71-6b454daadf8c",
+                                    "name": "a"
+                                },
+                                {
+                                    "id": "cd0df355-75f3-48c0-977a-8f2b7cd8197b",
+                                    "name": "b"
+                                },
+                                {
+                                    "id": "de5f7920-e9bc-441f-b4c0-3ebd8fe7013a",
+                                    "name": "c"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "4964136d-8ebf-4692-98ee-8f81b0fb1234",
+                            "name": "number",
+                            "children": [
+                                {
+                                    "id": "a1200bca-41c2-43e5-85d9-4d51554d552b",
+                                    "name": "1"
+                                },
+                                {
+                                    "id": "d6711d55-aae5-4dbe-a92e-55d87c1c02ef",
+                                    "name": "2"
+                                },
+                                {
+                                    "id": "87c0bf6a-6dfb-46d8-99b4-5112340529c9",
+                                    "name": "3"
+                                }
+                            ]
+                        }
+                    ],
+                    "required": True,
+                    "description": "",
+                    "render_value": False,
+                    "default_value": []
+                }
+            ]
+        },
+        "object_detection": {
+            "keypoints": [],
+            "object_groups": [],
+            "object_classes": [
+                {
+                    "id": "6b5ec356-cf5d-4e73-9cfb-1f7a3393f4a9",
+                    "name": "bb",
+                    "color": "#FF625A",
+                    "properties": [
+                        {
+                            "id": "5b65d4ae-2737-4de8-a460-70a5aab4eba2",
+                            "name": "pc",
+                            "type": "radio",
+                            "options": [
+                                {
+                                    "id": "1",
+                                    "name": "1"
+                                },
+                                {
+                                    "id": "2",
+                                    "name": "2"
+                                }
+                            ],
+                            "required": True,
+                            "description": "",
+                            "render_value": False,
+                            "default_value": None
+                        },
+                        {
+                            "id": "f7eebc07-155b-48f3-847d-5501668044ad",
+                            "name": "ps",
+                            "type": "checkbox",
+                            "options": [
+                                {
+                                    "id": "3",
+                                    "name": "1"
+                                },
+                                {
+                                    "id": "4",
+                                    "name": "2"
+                                }
+                            ],
+                            "required": True,
+                            "description": "",
+                            "render_value": False,
+                            "default_value": []
+                        }
+                    ],
+                    "constraints": {},
+                    "ai_class_map": [
+                        {
+                            "class_ids": [],
+                            "engine_id": ""
+                        }
+                    ],
+                    "annotation_type": "box"
+                }
+            ],
+            "annotation_types": [
+                "box",
+                "image category"
+            ]
+        }
+    }
+    labelInfo = build_label_info(label_interface_sample)
+    labelInfo.add_object(class_name='bb', annotation={
+            "coord": {
+                "x": 173,
+                "y": 92,
+                "width": 188,
+                "height": 161
+            }
+        },
+        properties= [
+            {
+                "name": "pc",
+                "value": "2"
+            },
+            {
+                "name": "ps",
+                "value": [
+                    "1"
+                ]
+            }
+        ]
+    )
+    labelInfo.add_object(class_name='bb', annotation={
+            "coord": {
+                "x": 99,
+                "y": 74,
+                "width": 78,
+                "height": 77
+            }
+        },
+        properties=[
+            {
+                "name": "pc",
+                "value": "1"
+            },
+            {
+                "name": "ps",
+                "value": [
+                    "2",
+                    "1"
+                ]
+            }
+        ]
+    )
+    labelInfo.set_categories(
+        properties=[
+            {
+                'name': 'Root',
+                'value': ['1', 'a', 'b']
+            }
+        ]
+    )
+
+    print(json.dumps(labelInfo.build_tags()))
+    print(json.dumps(labelInfo.build_info()))
+
+
 if __name__ == '__main__':
     # in a rush...
     test_build_label_info_from_scratch()
     test_build_label_info_from_result()
+    test_build_label_info_from_scratch_v4()
