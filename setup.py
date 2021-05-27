@@ -44,7 +44,7 @@ setup(
         "packaging==20.4",
         "pkginfo==1.5.0.1",
         "pprintpp==0.4.0",
-        "pygments==2.6.1",
+        "pygments==2.7.4",
         "pyparsing==2.4.7",
         "python-datauri==0.2.8",
         "readme-renderer==26.0",
