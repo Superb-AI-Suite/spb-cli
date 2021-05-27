@@ -65,10 +65,7 @@ class Float(Number):
         :param float value:
         :returns: "attribute_name:value"
         """
-
-        value = float(value)
-        
-        if value is None or (isinstance(value, float) and type(value) is not bool):
+        if value is None or ((isinstance(value, float) or isinstance(value, int)) and type(value) is not bool):
             return value
         else:
             raise AttributeTypeException(f"Invalid Float type for {self.attr_name}: {str(value)} is of {str(type(value))} type")

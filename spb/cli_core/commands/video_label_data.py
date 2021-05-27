@@ -15,7 +15,7 @@ from collections import ChainMap
 import spb
 from spb.cli_core.utils import recursive_glob_video_paths, recursive_glob_label_files
 from spb.models.label import Label
-from spb.libs.phy_credit.phy_credit.video import LabelInfo
+from spb.libs.phy_credit.phy_credit.video import build_label_info
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -300,7 +300,7 @@ def _update_label(args):
         if json_data['result'] is None:
             return
         
-        label_info = LabelInfo(label_interface=label_interface, result=json_data['result'])
+        label_info = build_label_info(label_interface=label_interface, result=json_data['result'])
         info_json = label_info.build_info()
         write_response = requests.put(described_label.info_write_presigned_url ,data=json.dumps(info_json))
 

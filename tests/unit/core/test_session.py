@@ -1,4 +1,6 @@
 import unittest
+import os
+
 from unittest.mock import patch, Mock
 
 from spb.core.session import BaseSession as Session
@@ -17,15 +19,29 @@ class SessionConfigurationTest(unittest.TestCase):
     def test_make_session_raises_exceptions_with_none_access_key(self, mock_file):
         account_name = 'RIGHT_ACCOUNT_NAME'
 
-        with self.assertRaises(SDKInitiationFailedException):
+        if not os.getenv('SPB_ACCESS_KEY', None) and not os.getenv('SPB_ACCOUNT_NAME', None):
+            with self.assertRaises(SDKInitiationFailedException):
+                session = Session(account_name=account_name, access_key=None)
+        else:
             session = Session(account_name=account_name, access_key=None)
+            self.assertEqual(session.credential, {
+                'account_name': os.getenv('SPB_ACCOUNT_NAME', None),
+                'access_key': os.getenv('SPB_ACCESS_KEY', None)
+            })
 
     @patch('spb.core.session.os.path.exists', return_value=False)
     def test_make_session_raises_exceptions_with_none_account_name(self, mock_file):
         access_key = 'RIGHT_ACCESS_KEY'
 
-        with self.assertRaises(SDKInitiationFailedException):
+        if not os.getenv('SPB_ACCESS_KEY', None) and not os.getenv('SPB_ACCOUNT_NAME', None):
+            with self.assertRaises(SDKInitiationFailedException):
+                session = Session(account_name=None, access_key=access_key)
+        else:
             session = Session(account_name=None, access_key=access_key)
+            self.assertEqual(session.credential, {
+                'account_name': os.getenv('SPB_ACCOUNT_NAME', None),
+                'access_key': os.getenv('SPB_ACCESS_KEY', None)
+            })
 
 
 class SessionActivateTest(unittest.TestCase):

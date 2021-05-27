@@ -1,18 +1,8 @@
 from uuid import uuid4
-from .. import __version__
+from . import __version__
 
 
 class LabelInfo:
-    @classmethod
-    def _get_opt_map(cls, options):
-        res = {}
-        for opt in options:
-            if 'children' in opt:
-                res.update(LabelInfo._get_opt_map(opt['children']))
-            else:
-                res[opt['name']] = opt
-        return res
-
 
     @classmethod
     def _set_properties(cls, properties_def, properties):
@@ -20,29 +10,27 @@ class LabelInfo:
         converted_properties = []
         for prop in properties:
             prop_def = prop_def_map[prop['name']]
+
             if prop_def['type'] in ['radio', 'dropdown', 'checkbox']:
-                opt_map = LabelInfo._get_opt_map(prop_def['options'])
+                opt_map = {opt['name']: opt for opt in prop_def['options']}
+
                 if prop_def['type'] == 'checkbox':
-                    converted_properties.append({
-                        'type': prop_def['type'],
-                        'property_id': prop_def['id'],
-                        'property_name': prop_def['name'],
-                        'option_ids': [opt_map[val]['id'] for val in prop['value']],
-                        'option_names': [opt_map[val]['name'] for val in prop['value']],
-                    })
+                    option_id = [opt_map[val]['id'] for val in prop['value']]
+                    option_name = [opt_map[val]['name'] for val in prop['value']]
                 else:
-                    converted_properties.append({
-                        'type': prop_def['type'],
-                        'property_id': prop_def['id'],
-                        'property_name': prop_def['name'],
-                        'option_id': opt_map[prop['value']]['id'],
-                        'option_name': opt_map[prop['value']]['name'],
-                    })
+                    option_id = opt_map[prop['value']]['id']
+                    option_name = opt_map[prop['value']]['name']
+
+                converted_properties.append({
+                    'propertyId': prop_def['id'],
+                    'propertyName': prop_def['name'],
+                    'optionId': option_id,
+                    'optionName': option_name,
+                })
             elif prop_def['type'] == 'free response':
                 converted_properties.append({
-                    'type': prop_def['type'],
-                    'property_id': prop_def['id'],
-                    'property_name': prop_def['name'],
+                    'propertyId': prop_def['id'],
+                    'propertyName': prop_def['name'],
                     'value': prop['value'],
                 })
         return converted_properties
@@ -52,20 +40,16 @@ class LabelInfo:
         prop_def_map = {prop_def['name']: prop_def for prop_def in properties_def}
         converted_properties = []
         for prop in properties:
-            prop_def = prop_def_map[prop['property_name']]
-            if prop_def['type'] in ['radio', 'dropdown']:
+            prop_def = prop_def_map[prop['propertyName']]
+
+            if prop_def['type'] in ['radio', 'dropdown', 'checkbox']:
                 converted_properties.append({
-                    'name': prop['property_name'],
-                    'value': prop['option_name']
-                })
-            elif prop_def['type'] == 'checkbox':
-                converted_properties.append({
-                    'name': prop['property_name'],
-                    'value': prop['option_names']
+                    'name': prop['propertyName'],
+                    'value': prop['optionName']
                 })
             elif prop_def['type'] == 'free response':
                 converted_properties.append({
-                    'name': prop['property_name'],
+                    'name': prop['propertyName'],
                     'value': prop['value'],
                 })
         return converted_properties
@@ -97,10 +81,10 @@ class LabelInfo:
 
         self.result['objects'].append({
             'id': id,
-            'tracking_id': tracking_id,
-            'class_id': self.object_classes_map[class_name]['id'],
-            'class_name': class_name,
-            'annotation_type': self.object_classes_map[class_name]['annotation_type'],
+            'trackingId': tracking_id,
+            'classId': self.object_classes_map[class_name]['id'],
+            'className': class_name,
+            'annotationType': self.object_classes_map[class_name]['annotation_type'],
             'frames': [
                 {
                     'num': anno['frame_num'],
@@ -120,17 +104,17 @@ class LabelInfo:
             simple_objects = [
                 {
                     'id': obj['id'],
-                    'tracking_id': obj['tracking_id'],
-                    'class_name': obj['class_name'],
+                    'tracking_id': obj['trackingId'],
+                    'class_name': obj['className'],
                     'annotations': [
                         {
                             'frame_num': frame['num'],
                             'coord': frame['annotation']['coord'],
-                            'properties': LabelInfo._get_properties(self.object_classes_map[obj['class_name']]['properties'], frame['properties']),
+                            'properties': LabelInfo._get_properties(self.object_classes_map[obj['className']]['properties'], frame['properties']),
                         }
                         for frame in obj['frames']
                     ],
-                    'properties': LabelInfo._get_properties(self.object_classes_map[obj['class_name']]['properties'], obj['properties']),
+                    'properties': LabelInfo._get_properties(self.object_classes_map[obj['className']]['properties'], obj['properties']),
                 }
                 for obj in self.result['objects']
             ]
@@ -171,9 +155,9 @@ class LabelInfo:
         anno_count = {}
         classes_name = {}
         for obj in self.result['objects']:
-            classes_count[obj['class_id']] = classes_count.get(obj['class_id'], 0) + 1
-            anno_count[obj['class_id']] = anno_count.get(obj['class_id'], 0) + len(obj['frames'])
-            classes_name[obj['class_id']] = obj['class_name']
+            classes_count[obj['classId']] = classes_count.get(obj['classId'], 0) + 1
+            anno_count[obj['classId']] = anno_count.get(obj['classId'], 0) + len(obj['frames'])
+            classes_name[obj['classId']] = obj['className']
 
         return {
             'classes_id': list(classes_count.keys()),
@@ -200,15 +184,15 @@ class LabelInfo:
         return {
             'version': __version__,
             'meta': {
-                'image_info': {},
-                'edit_info': {
+                'imageInfo': {},
+                'editInfo': {
                     'objects': [
                         {
                             'id': obj['id'],
-                            'color': self.object_classes_map[obj['class_name']]['color'],
+                            'color': self.object_classes_map[obj['className']]['color'],
                             'visible': True,
                             'selected': False,
-                            'tracking_id': obj['tracking_id'],
+                            'trackingId': obj['trackingId'],
                         }
                         for obj in self.result['objects']
                     ]
