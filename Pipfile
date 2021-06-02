@@ -29,7 +29,7 @@ scikit-image = "*"
 semver = "*"
 importlib-metadata = "==3.6"
 jupyter = "*"
-urllib3 = "==1.25.9"
+urllib3 = "==1.26.5"
 natsort = "*"
 
 [requires]
