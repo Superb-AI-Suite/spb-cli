@@ -110,11 +110,16 @@ class LabelData():
         main_label_count, labels = self.label_manager.get_labels(project.id, label_type='DEFAULT', page=1, page_size=1)
         # get labels count
         total_label_count, labels = self.label_manager.get_labels(project.id, page=1, page_size=1)
-        #TODO : change get count for labels
-        # command = spb.Command(type='describe_label')
-        # _, label_count = spb.run(command=command, option={
-        #     'project_id' : project.id
-        # }, page_size = 1, page = 1)
+
+        #Download project configuration
+        try:
+            project_config_path = os.path.join(directory_path, 'project.json')
+            with open(project_config_path, 'w') as input:
+                json.dump(project.label_interface, input, indent=4)
+            is_download_project_config = True
+        except Exception as e:
+            is_download_project_config = False
+
         if main_label_count != 0:
             page_length = int(main_label_count/LABEL_DESCRIBE_PAGE_SIZE) if main_label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(main_label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
             if not is_forced:
@@ -138,6 +143,7 @@ class LabelData():
 
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
+        console.print(f'Download of project configuration - {"[b blue]Success[/b blue]" if is_download_project_config else "[b red]Fail[/b red]"}')
         console.print(f'Successful download of {success_labels_count} out of {total_label_count} labels. ({round(success_labels_count/total_label_count*100,2)}%) - [b red]{total_label_count - success_labels_count} ERRORS[/b red]')
         console.print(f'Successful download of {success_data_count} out of {main_label_count} data. ({round(success_data_count/main_label_count*100,2)}%) - [b red]{main_label_count - success_data_count} ERRORS[/b red]')
 

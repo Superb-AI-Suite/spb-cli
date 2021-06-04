@@ -99,6 +99,16 @@ class VideoLabelData():
         _, label_count = spb.run(command=command, option={
             'project_id' : project.id
         }, page_size = 1, page = 1)
+
+        #Download project configuration
+        try:
+            project_config_path = os.path.join(directory_path, 'project.json')
+            with open(project_config_path, 'w') as input:
+                json.dump(project.label_interface, input, indent=4)
+            is_download_project_config = True
+        except Exception as e:
+            is_download_project_config = False
+
         if label_count != 0:
             page_length = int(label_count/LABEL_DESCRIBE_PAGE_SIZE) if label_count % LABEL_DESCRIBE_PAGE_SIZE == 0 else int(label_count/LABEL_DESCRIBE_PAGE_SIZE)+1
             if not is_forced:
@@ -128,6 +138,7 @@ class VideoLabelData():
             data_results = {}
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
+        console.print(f'Download of project configuration - {"[b blue]Success[/b blue]" if is_download_project_config else "[b red]Fail[/b red]"}')
         label_success_count = label_count - len(label_results)
         console.print(f'Successful download of {label_success_count} out of {label_count} labels. ({round(label_success_count/label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
         data_success_count = label_count - len(data_results)

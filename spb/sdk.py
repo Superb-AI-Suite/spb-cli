@@ -266,6 +266,12 @@ class DataHandle(object):
 
         return self._data.data_url
 
+    def get_label_interface(self):
+        try:
+            return self._project.label_interface
+        except:
+            return None
+
     ##############################
     # Simple SDK functions
     ##############################
@@ -429,6 +435,12 @@ class VideoDataHandle(object):
         data_url = json.loads(self._data.data_url)
         for frame_idx in range(len(data_url['file_infos'])):
             yield self.get_frame_url(frame_idx, data_url)
+
+    def get_label_interface(self):
+        try:
+            return self._project.label_interface
+        except:
+            return None
 
     ##############################
     # Simple SDK functions
