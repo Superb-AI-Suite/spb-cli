@@ -206,10 +206,6 @@ class LabelManager(BaseManager):
 
         return updated_label
 
-    def update_label_tags(self, label: Label, tags:list, **kwargs):
-        label.tags = tags
-        return self.update_label(label)
-
     def delete_label(self):
         pass
 

@@ -8,7 +8,14 @@ from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
 from spb.orm.utils import is_json
 
 
-class AttributeModel:
+class AttributeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, AttributeModel):
+            return o.__dict__
+        else:
+            return o
+
+class AttributeModel():
     @classmethod
     def get_data(self, item):
         """Change PlainObject(&List) to dictionary
