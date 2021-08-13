@@ -6,7 +6,7 @@ import base64
 
 from collections import deque
 from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException, NotFoundException
-
+from spb.core.models.attrs import AttributeEncoder
 
 class BaseSession:
     endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
@@ -44,10 +44,13 @@ class BaseSession:
                                        profile=profile)  # get values from credential
             self.credential = config
 
-        if self.credential['account_name'] is None:
+        if self.credential is None:
+            raise SDKInitiationFailedException(
+                '** [ERROR] credential does not exists')
+        elif self.credential['account_name'] is None:
             raise SDKInitiationFailedException(
                 '** [ERROR] credential [account_name] does not exists')
-        if self.credential['access_key'] is None:
+        elif self.credential['access_key'] is None:
             raise SDKInitiationFailedException(
                 '** [ERROR] credential [access_key] does not exists')
 
@@ -84,7 +87,7 @@ class BaseSession:
             'query': query,
             'variables': values
         }
-        request_param = json.dumps(data)
+        request_param = json.dumps(data, cls=AttributeEncoder)
         try:
             response = requests.post(self.endpoint, data=request_param, headers=self.headers)
         except requests.exceptions.HTTPError as e:

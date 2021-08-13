@@ -187,6 +187,8 @@ class PlainObject(Type):
                     value = self.express(**value)
             except Exception as e:
                 raise AttributeTypeException('')
+        elif isinstance(value, dict):
+            value = self.express(**value)
         if value is None:
             return value
         elif not isinstance(value, AttributeModel):
@@ -208,15 +210,19 @@ class PlainObjectList(Type):
             except Exception as e:
                 raise AttributeTypeException('')
         if value is None:
-            return value
+            return None
         elif not isinstance(value, list):
-            raise AttributeTypeException(f'Invalid PlainObject type for {self.attr_name}: {str(type(value))} is not a list')
+            raise AttributeTypeException(f'Invalid PlainObjectList type for {self.attr_name}: {str(type(value))} is not a list')
+        result = []
         for idx, item in enumerate(value):
             # TODO: refactoring serialize
-            if isinstance(item, dict):
+            if isinstance(item, AttributeModel):
+                result.append(item)
+            elif isinstance(item, dict):
                 item = self.express(**item)
+                result.append(item)
             if not isinstance(item, AttributeModel):
-                raise AttributeTypeException(f'Invalid PlainObject type for {self.attr_name}: {str(type(value))}-{idx} is unimplemented AttributeModel')
+                raise AttributeTypeException(f'Invalid PlainObjectList type for {self.attr_name}: {str(type(value))}-{idx} is unimplemented AttributeModel')
             elif not isinstance(item, self._express):
-                raise AttributeTypeException(f'Invalid PlainObject type for {self.attr_name}: {str(type(value))}-{idx} is not unmatched with {str(type(self._express))}')
-        return value
+                raise AttributeTypeException(f'Invalid PlainObjectList type for {self.attr_name}: {str(type(value))}-{idx} is not unmatched with {str(type(self._express))}')
+        return result

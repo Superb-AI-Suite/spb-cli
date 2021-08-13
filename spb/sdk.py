@@ -372,13 +372,12 @@ class DataHandle(object):
             self._init_label_build_info()
 
     def set_tags(self, tags: list = None):
-        real_tags = []
+        label_tags = []
         if tags is not None and isinstance(tags, list):
             for tag in tags:
-                real_tags.append(Tags(name=tag))
+                label_tags.append(Tags(name=tag))
 
-        manager = LabelManager()
-        self._data = manager.update_label_tags(label=self._data, tags = real_tags)
+        self._data.tags = label_tags
 
 
 class VideoDataHandle(object):
