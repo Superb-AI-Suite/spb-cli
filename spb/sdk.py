@@ -324,10 +324,16 @@ class DataHandle(object):
 
     def set_category_labels(self, labels:list = None, category:dict = None, properties = None):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
+            # build new info
             self._label_build_params.set_categories(properties=properties)
+            info = self._label_build_params.build_info()
+            categories = {'properties': []}
+            if 'result' in info and 'categories' in info['result']:
+                categories = info['result']['categories']
+            # apply
             self._data.result = {
-                **self._data.result,
-                'categories': self._label_build_params.build_info().get('categories', {'properties':[]})
+                **(self._data.result or {}),
+                'categories': categories,
             }
         else:
             category_map = self._project.label_interface['categorization']['word_map']
@@ -347,10 +353,19 @@ class DataHandle(object):
 
     def set_object_labels(self, labels):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
-            self._label_build_params.result = None
+            # build new info
+            self._label_build_params.init_objects()
             for label in labels:
                 self._label_build_params.add_object(**label)
-            self._data.result = self._label_build_params.build_info().get('objects', {'objects':[]})
+            info = self._label_build_params.build_info()
+            objects = []
+            if 'result' in info and 'objects' in info['result']:
+                objects = info['result']['objects']
+            # apply
+            self._data.result = {
+                **(self._data.result or {}),
+                'objects': objects,
+            }
         else:
             if not self._data.result:
                 self._data.result = {}

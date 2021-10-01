@@ -37,6 +37,10 @@ class LabelInfoBuildParams:
     def get_categories(self):
         return self._label_info.get_categories()
 
+    def init_objects(self):
+        if self._label_info is not None:
+            self._label_info.init_objects()
+
     def add_object(self, class_name, annotation, properties=None, id=None):
         if self._label_info is not None:
             self._label_info.add_object(class_name=class_name, annotation=annotation, properties=properties, id=id)
