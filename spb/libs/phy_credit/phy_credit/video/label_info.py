@@ -105,6 +105,7 @@ class LabelInfo:
                 {
                     'num': anno['frame_num'],
                     'annotation': {
+                        'multiple': anno.get('multiple', False),
                         'coord': anno['coord'],
                         'meta': anno.get('meta', {}),
                     },
@@ -125,6 +126,7 @@ class LabelInfo:
                     'annotations': [
                         {
                             'frame_num': frame['num'],
+                            'multiple': frame['annotation'].get('multiple', False),
                             'coord': frame['annotation']['coord'],
                             'properties': LabelInfo._get_properties(self.object_classes_map[obj['class_name']]['properties'], frame['properties']),
                         }
@@ -174,10 +176,23 @@ class LabelInfo:
             classes_count[obj['class_id']] = classes_count.get(obj['class_id'], 0) + 1
             anno_count[obj['class_id']] = anno_count.get(obj['class_id'], 0) + len(obj['frames'])
             classes_name[obj['class_id']] = obj['class_name']
+        class_val = list(classes_name.values())
+
+        categories_id = []
+        if 'categories' in self.result and 'properties' in self.result['categories']:
+            properties_list = [self.result['categories']['properties']] + [frame['properties'] for frame in self.result['categories']['frames']]
+            for properties in properties_list:
+                for prop in properties:
+                    if 'option_id' in prop:
+                        categories_id.append(prop['option_id'])
+                    elif 'option_ids' in prop:
+                        for o_id in prop['option_ids']:
+                            categories_id.append(o_id)
+            class_val.extend(categories_id)
 
         return {
             'classes_id': list(classes_count.keys()),
-            'class': list(classes_name.values()),
+            'class': class_val,
             'classes_count': [
                 {
                     'id': k,
@@ -194,6 +209,7 @@ class LabelInfo:
                 }
                 for k, v in anno_count.items()
             ],
+            'categories_id': categories_id,
         }
 
     def build_info(self):

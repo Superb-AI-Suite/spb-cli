@@ -99,6 +99,7 @@ class LabelInfo:
             'className': class_name,
             'annotationType': annotation_type,
             'annotation': {
+                'multiple': annotation.get('multiple', False),
                 'coord': annotation['coord'],
                 'meta': annotation.get('meta', {}),
             },

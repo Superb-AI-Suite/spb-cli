@@ -1,6 +1,6 @@
 # phy-credit, python version of shy-credit
 
-* v0.4.3
+* v0.4.5
 
 * [original shy-credit](https://github.com/Superb-AI-Suite/shy-credit)
 * Temporary python version

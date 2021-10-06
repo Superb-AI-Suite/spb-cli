@@ -89,6 +89,7 @@ class LabelInfo:
                 {
                     'num': anno['frame_num'],
                     'annotation': {
+                        'multiple': anno.get('multiple', False),
                         'coord': anno['coord'],
                         'meta': anno.get('meta', {}),
                     },
@@ -109,6 +110,7 @@ class LabelInfo:
                     'annotations': [
                         {
                             'frame_num': frame['num'],
+                            'multiple': frame['annotation'].get('multiple', False),
                             'coord': frame['annotation']['coord'],
                             'properties': LabelInfo._get_properties(self.object_classes_map[obj['className']]['properties'], frame['properties']),
                         }
