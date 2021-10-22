@@ -48,12 +48,12 @@ __all__ = ('Client', 'DataHandle', 'VideoDataHandle')
 
 
 class Client(object):
-    def __init__(self, project_name=None, account_name: str = None, access_key: str = None):
+    def __init__(self, project_name=None, team_name: str = None, access_key: str = None):
         super().__init__()
 
-        if account_name is not None and access_key is not None:
-            print(f'[INFO] Usage: Client has been started with {account_name}')
-            spb.setup_default_session(account_name = account_name, access_key = access_key)
+        if team_name is not None and access_key is not None:
+            print(f'[INFO] Usage: Client has been started with {team_name}')
+            spb.setup_default_session(team_name = team_name, access_key = access_key)
 
         if project_name is None:
             print('[WARNING] Specify the name of a project to be accessed')

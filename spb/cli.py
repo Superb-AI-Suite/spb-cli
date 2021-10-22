@@ -27,10 +27,10 @@ def cli():
 
 @cli.command()
 # @click.option('--profile_name', prompt='Profile Name', default='default')]
-@click.option('-n', '--account_name', required=False, help="Your account name")
+@click.option('-n', '--team_name', required=False, help="Your team name")
 @click.option('-k', '--access_key', required=False, help="Your access key")
 @click.option('-l', '--list', 'list_flag', is_flag=True, help="Displays all your configurations")
-def configure(account_name, access_key, list_flag):
+def configure(team_name, access_key, list_flag):
     """Config your CREDENTIALS(Profile Name, Access Key)"""
     profile_name = 'default'
 
@@ -43,8 +43,8 @@ def configure(account_name, access_key, list_flag):
             console.print( "Credential is not configured. Plz, Config your credential first.")
         return
 
-    if account_name is None:
-        account_name = click.prompt('Suite Account Name', type=str)
+    if team_name is None:
+        team_name = click.prompt('Suite Team Name', type=str)
     if access_key is None:
         access_key = click.prompt('Access Key', type=str)
 
@@ -56,14 +56,14 @@ def configure(account_name, access_key, list_flag):
     config_parser = configparser.ConfigParser()
     config_parser.read(credential_path)
     config_parser[profile_name] = {
-        'account_name': account_name,
+        'team_name': team_name,
         'access_key': access_key,
     }
 
     with open(credential_path, 'w') as f:
         config_parser.write(f)
 
-    console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with account name '{account_name}'.")
+    console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with team name '{team_name}'.")
 
 @cli.group()
 def describe():

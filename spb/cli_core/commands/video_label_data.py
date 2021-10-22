@@ -44,7 +44,7 @@ class VideoLabelData():
             data_results = manager.list([manager.dict()]*len(asset_videos))
             console.print(f"Uploading data:")
             with Pool(NUM_MULTI_PROCESS) as p:
-                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_videos), [project.label_interface]*len(labels_path), asset_videos, data_results)), total=len(asset_videos)))
+                list(tqdm.tqdm(p.imap(_upload_asset, zip([project.id] * len(asset_videos), asset_videos, data_results)), total=len(asset_videos)))
         else:
             data_results = [{}]
 
