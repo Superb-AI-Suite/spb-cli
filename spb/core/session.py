@@ -1,3 +1,4 @@
+import logging
 import os
 import configparser
 import requests
@@ -7,6 +8,8 @@ import base64
 from collections import deque
 from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException, NotFoundException
 from spb.core.models.attrs import AttributeEncoder
+
+logger = logging.getLogger()
 
 class BaseSession:
     endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
@@ -18,57 +21,82 @@ class BaseSession:
     }
     history = deque(10*['EMPTY'], 10)
 
-    def __init__(self, profile='default', account_name=None, access_key=None):
+    def __init__(self, profile='default', team_name=None, access_key=None):
         self.credential = None
-        self._set_credential(profile, account_name, access_key)
+        self._set_credential(profile, team_name, access_key)
 
-    def _set_credential(self, profile='default', account_name=None, access_key=None):
-        if account_name and access_key:
-            # To make credential
+    def _set_credential(self, profile='default', team_name=None, access_key=None):
+        if not profile and not team_name and not access_key:
+            profile = 'default'
+        self.headers = None
+        if team_name and access_key:
+            # 1st priority
             self.credential = {
-                'account_name': account_name,
+                'team_name': team_name,
                 'access_key': access_key
             }
-        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv("SPB_ACCOUNT_NAME", None):
+        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv("SPB_TEAM_NAME", None):
+            # 2nd priority
             self.credential = {
-                'account_name': os.getenv("SPB_ACCOUNT_NAME"),
+                'team_name': os.getenv("SPB_TEAM_NAME"),
                 'access_key': os.getenv("SPB_ACCESS_KEY")
             }
-        elif profile and not account_name and not access_key:
+        elif profile and not team_name and not access_key:
+            # 3rd
             credential_path = os.path.join(os.path.expanduser('~'), '.spb', 'config')
-
             # check exists credentials
-            assert os.path.exists(credential_path), SDKInitiationFailedException(
-                '** [ERROR] credentials file does not exists')
+            if not os.path.exists(credential_path):
+                self.credential = None
+                return
             config = self._read_config(credential_path=credential_path,
                                        profile=profile)  # get values from credential
             self.credential = config
+        else:
+            # To raise SDKInitiationFailedException error
+            raise SDKInitiationFailedException('** [ERROR] credential does not exists')
 
-        if self.credential is None:
-            raise SDKInitiationFailedException(
-                '** [ERROR] credential does not exists')
-        elif self.credential['account_name'] is None:
-            raise SDKInitiationFailedException(
-                '** [ERROR] credential [account_name] does not exists')
-        elif self.credential['access_key'] is None:
-            raise SDKInitiationFailedException(
-                '** [ERROR] credential [access_key] does not exists')
 
-        self.headers['X-API-KEY'] = self.credential['access_key']
-        authorization_string = base64.b64encode(f'{self.credential["account_name"]}:{self.credential["access_key"]}'.encode("UTF-8"))
-        self.headers['Authorization'] = f'Basic {authorization_string.decode("UTF-8")}'
+    def _set_headers(self):
+        if self.headers is None and self.credential is not None:
+            if self.credential['team_name'] is None:
+                raise SDKInitiationFailedException(
+                    '** [ERROR] credential [team_name] does not exists')
+            if self.credential['access_key'] is None:
+                raise SDKInitiationFailedException(
+                    '** [ERROR] credential [access_key] does not exists')
+
+            self.headers = dict()
+            self.headers['X-API-KEY'] = self.credential['access_key']
+            authorization_string = base64.b64encode(f'{self.credential["team_name"]}:{self.credential["access_key"]}'.encode("UTF-8"))
+            self.headers['Authorization'] = f'Basic {authorization_string.decode("UTF-8")}'
+        elif self.headers is not None:
+            return
+        else:
+            raise SDKInitiationFailedException('** [ERROR] credential does not exists.')
 
     def _read_config(self, credential_path, profile):
         config = configparser.ConfigParser()
         config.read(credential_path)
         ret = {}
-        vars = ['account_name', 'access_key']
+        vars = ['team_name', 'access_key']
         for var in vars:
             try:
                 ret[var] = config.get(profile, var)
             except (configparser.NoSectionError, configparser.NoOptionError):
-                raise SDKInitiationFailedException(
-                    '** [ERROR] credential - key [{0}] does not exists'.format(var))
+                ret = None
+                break
+        if ret is not None:
+            return ret
+
+        ret = {}
+        vars = ['access_key', 'account_name']
+        for var in vars:
+            try:
+                ret['team_name' if var == 'account_name' else var] = config.get(profile, var)
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                return None
+                break
+
         return ret
 
     def check_session(self):
@@ -83,6 +111,7 @@ class BaseSession:
             return True
 
     def execute(self, query: str, values: dict = {}):
+        self._set_headers()
         data = {
             'query': query,
             'variables': values

@@ -41,15 +41,15 @@ Once installed, you can type `spb` command in the terminal to access the command
 
 You need an *Access Key* for authentication. The *Access Key* can be generated on the :tada: [Superb AI Suite web](https://suite.superb-ai.com/) (Suite > My Account > Advanced).
 
-You can then configure your profile by entering your *Suite Account Name* and the generated *Access Key*. 
+You can then configure your profile by entering your *Suite Team Name* and the generated *Access Key*. 
 
-:rotating_light: ***Suite Account Name* does <ins>NOT</ins> refer to your personal account. It refers to the organization name that your personal account belongs to:**
+:rotating_light: ***Suite Team Name* refers to the organization name that your personal account belongs to:**
 
 <img src="./assets/account-name.png" width="400">
 
 ```shell
 $ spb configure
-Suite Account Name: foo
+Suite Team Name: foo
 Access Key: bar
 ```
 
@@ -61,7 +61,7 @@ $ spb configure --list
 
 [default]
 access_key = foo
-account_name = bar
+team_name = bar
 ```
 
 ## Resource Description
