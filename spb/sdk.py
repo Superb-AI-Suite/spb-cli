@@ -79,11 +79,11 @@ class Client(object):
     ##############################
 
     @classmethod
-    def get_project(cls, project_name):
+    def get_project(cls, name):
         manager = ProjectManager()
-        project = manager.get_project(name=project_name)
+        project = manager.get_project(name=name)
         if project is None:
-            print('[WARNING] Project {} not found'.format(project_name))
+            print('[WARNING] Project {} not found'.format(name))
             return None
 
         return project
