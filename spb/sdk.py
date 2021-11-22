@@ -34,8 +34,10 @@ import logging
 
 from natsort import natsorted
 from spb.labels import Label
+from spb.projects import Project
 from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.labels.manager import LabelManager
+from spb.projects.manager import ProjectManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.serializer import LabelInfoBuildParams
 
@@ -56,11 +58,10 @@ class Client(object):
             spb.setup_default_session(team_name = team_name, access_key = access_key)
 
         if project_name is None:
-            print('[WARNING] Specify the name of a project to be accessed')
-            print('[INFO] Usage: client = Client(project_name=\"<your_project_name>\")')
-            return
-
-        self._project = Client._get_project(project_name)
+            print('[WARNING] Client cannot be used to describe label without project')
+            self._project = None
+        else:
+            self._project = Client.get_project(project_name)
         self._s3 = boto3.client('s3')
 
     ##############################
@@ -78,15 +79,35 @@ class Client(object):
     ##############################
 
     @classmethod
-    def _get_project(cls, project_name):
-        command = spb.Command(type='describe_project')
-        projects, num_of_projects = spb.run(command=command, option={'name': project_name}, page=1, page_size=1)
-
-        if num_of_projects == 0:
+    def get_project(cls, project_name):
+        manager = ProjectManager()
+        project = manager.get_project(name=project_name)
+        if project is None:
             print('[WARNING] Project {} not found'.format(project_name))
             return None
 
-        return projects[0]
+        return project
+
+    @classmethod
+    def get_projects(cls, page: int = 1, page_size: int = 10):
+        manager = ProjectManager()
+        count, projects = manager.get_project_list(page = page, page_size = page_size)
+        return (count, projects)
+
+    def set_project(self, project: Project):
+        self._project = project
+
+    @property
+    def project(self):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return None
+        else:
+            return self._project
+
+    @project.setter
+    def project(self, project: Project):
+        self._project = project
 
     ##############################
     # Simple SDK functions
@@ -108,6 +129,10 @@ class Client(object):
         return num_data
 
     def get_data_page(self, page_idx, page_size=10, num_data=None, tags=[], dataset=None, data_key=None, **kwargs):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return None
+
         if num_data is None:
             num_data = self.get_num_data(tags=tags, **kwargs)
 
@@ -142,6 +167,9 @@ class Client(object):
                 yield DataHandle(data, self._project)
 
     def upload_image(self, path, dataset_name, key=None, name=None):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return
         if not os.path.isfile(path):
             print('[WARNING] Invalid path. Upload failed')
             return
@@ -162,6 +190,10 @@ class Client(object):
             print('[WARNING] Duplicate data key. Upload failed')
 
     def upload_image_s3(self, bucket_name, path, dataset_name, key=None):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return
+
         name = path.split('/')[-1]
         ext = path.split('.')[-1]
         temp_path = '{:032x}.{}'.format(random.getrandbits(128), ext)
@@ -178,6 +210,10 @@ class Client(object):
                 os.remove(temp_path)
 
     def upload_video(self, path, dataset_name, key=None):
+        if self._project is None:
+            print('[WARNING] Project is not described')
+            return
+
         if not os.path.isdir(path):
             print('[WARNING] Invalid path. Upload failed')
             return
