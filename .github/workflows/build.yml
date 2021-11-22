@@ -22,7 +22,7 @@ jobs:
         python-version: 3.7
     - name: Install modules
       run: |
-        pip3 install 'chardet<4,>=3.0.2' 'colorama==0.4.3' 'attrs'
+        pip3 install 'chardet<4,>=3.0.2' 'colorama==0.4.3' 'attrs' 'requests' 'semver' 'scikit-image'
     - name: Install dependencies
       run: |
         pipenv install --dev --system
@@ -32,6 +32,7 @@ jobs:
     - name: Install
       run: |
         python setup.py install
-    # - name: Version Check
-    #   run: |
-    #     python -m spb --version
+    - name: Version Check
+      run: |
+        python -m spb --version
+
