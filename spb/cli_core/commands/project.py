@@ -5,8 +5,8 @@ import math
 import rich.table
 import rich.console
 
-import spb
-from spb.cli_core.utils import get_project_config
+from spb.projects import Project
+from spb.projects.manager import ProjectManager
 
 console = rich.console.Console()
 
@@ -19,10 +19,20 @@ class Project():
             table = rich.table.Table(show_header=True, header_style="bold magenta")
             table.add_column("NAME", width=50)
             table.add_column("LABELS", justify="right")
-            table.add_column("PROGRESS", justify="right")
+            table.add_column("IN PROGRESS", justify="right")
+            table.add_column("SUBMITTED", justify="right")
+            table.add_column("SKIPPED", justify="right")
 
             for item in projects:
-                table.add_row(item.name, f"{item.label_count}", f"{item.progress}%")
+                in_progress_ratio = math.ceil( item.in_progress_label_count / item.label_count * 100 ) if item.label_count > 0 else 0
+                skipped_ratio = math.ceil( item.skipped_label_count / item.label_count * 100 ) if item.label_count > 0 else 0
+                table.add_row(
+                    item.name,
+                    f"{item.label_count}",
+                    f"{item.in_progress_label_count} ({in_progress_ratio} %)",
+                    f"{item.submitted_label_count} ({item.progress} %)",
+                    f"{item.skipped_label_count} ({skipped_ratio} %)"
+                )
 
             console.print(table)
             total_page = math.ceil(project_count/self.CURRENT_PAGE_COUNT)
@@ -39,7 +49,7 @@ class Project():
 
 
     def check_project(self, project_name):
-        projects = self._get_projects(name=project_name)
+        projects, _ = self._get_projects(name=project_name)
         return projects[0] if projects and projects[0] else None
 
     def init_project(self, directory_path, project):
@@ -54,8 +64,10 @@ class Project():
         console.print(f"Workspace '{directory_path}' for project '{project.name}' has been created.")
 
     def _get_projects(self, name=None, page=None, page_size=None):
-        command = spb.Command(type='describe_project')
-        if name is not None:
-            return spb.run(command=command, option={'name':name})
+        manager = ProjectManager()
+        if name is None:
+            count, projects = manager.get_project_list(page = page, page_size = page_size)
+            return projects, count
         else:
-            return spb.run(command=command, page=page, page_size=page_size)
+            project = manager.get_project(name=name)
+            return [project], 1

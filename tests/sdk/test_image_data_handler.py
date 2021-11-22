@@ -12,7 +12,7 @@ from spb.labels.label import WorkappType
 
 class TestImageDataHandler(unittest.TestCase):
 
-    @patch('spb.sdk.Client._get_project')
+    @patch('spb.sdk.Client.get_project')
     def setUp(self, mock):
         # Settings about mock data
         mock.return_value = MOCK_PROJECT

@@ -8,7 +8,7 @@ from .mocks import MOCK_PROJECT
 
 class TestSDK(unittest.TestCase):
     def setUp(self):
-        with patch.object(spb.sdk.Client, '_get_project') as mock_method:
+        with patch.object(spb.sdk.Client, 'get_project') as mock_method:
             mock_method.return_value = MOCK_PROJECT
             self.client = spb.sdk.Client(project_name='PROJECT_NAME_TO_TEST')
 

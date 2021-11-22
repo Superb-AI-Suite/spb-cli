@@ -22,10 +22,15 @@ jobs:
         python-version: 3.7
     - name: Install chardet dependency
       run: |
-        pip3 install chardet
+        pip3 install chardet pytest requests semver scikit-image boto3 natsort
     - name: Install dependencies
       run: |
         pipenv install --dev --system
-    # - name: Unit test with pytest
-    #   run: |
-    #     python -m pytest ./tests/unit/
+    - name: Unit test with pytest
+      env:
+        SPB_ACCESS_KEY: ${{ secrets.SPB_ACCESS_KEY }}
+        SPB_TEAM_NAME: ${{ secrets.SPB_TEAM_NAME }}
+        SPB_APP_API_ENDPOINT: https://api.dev.superb-ai.com/v2/graphql
+      run: |
+        python -m pytest ./tests
+
