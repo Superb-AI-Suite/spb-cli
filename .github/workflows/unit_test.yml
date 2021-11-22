@@ -29,7 +29,7 @@ jobs:
     - name: Unit test with pytest
       env:
         SPB_ACCESS_KEY: ${{ secrets.SPB_ACCESS_KEY }}
-        SPB_TEAM_NAME: ${{ secrets.SPB_ACCOUNT_NAME }}
+        SPB_TEAM_NAME: ${{ secrets.SPB_TEAM_NAME }}
         SPB_APP_API_ENDPOINT: https://api.dev.superb-ai.com/v2/graphql
       run: |
         python -m pytest ./tests
