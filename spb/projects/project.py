@@ -9,7 +9,7 @@ from spb.core.models.types import (
     String,
     ID,
     Int,
-    PlainObject
+    JsonList,
 )
 
 
@@ -25,3 +25,4 @@ class Project(Model):
     submitted_label_count = Int(property_name='submittedLabelCount', default = 0)
     in_progress_label_count = Int(property_name='inProgressLabelCount', default = 0)
     skipped_label_count = Int(property_name='skippedLabelCount', default = 0)
+    stats = JsonList(property_name='stats', default = [])

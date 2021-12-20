@@ -18,7 +18,7 @@ class ProjectManagerTest(unittest.TestCase):
 
         self.assertEqual(
             query,
-            'query ($name:String) {projects(name:$name,page:1,pageSize:1){count, edges{id name labelInterface workapp labelCount progress submittedLabelCount inProgressLabelCount skippedLabelCount}}}'
+            'query ($name:String) {projects(name:$name,page:1,pageSize:1){count, edges{id name labelInterface workapp labelCount progress submittedLabelCount inProgressLabelCount skippedLabelCount stats}}}'
         )
         self.assertEqual(
             value,
@@ -31,7 +31,7 @@ class ProjectManagerTest(unittest.TestCase):
 
         self.assertEqual(
             query,
-            'query  {projects(page:1,pageSize:10){count, edges{id name labelInterface workapp labelCount progress submittedLabelCount inProgressLabelCount skippedLabelCount}}}'
+            'query  {projects(page:1,pageSize:10){count, edges{id name labelInterface workapp labelCount progress submittedLabelCount inProgressLabelCount skippedLabelCount stats}}}'
         )
         self.assertEqual(
             value,
@@ -82,3 +82,13 @@ class ProjectManagerTest(unittest.TestCase):
             project.name,
             'MOCK_PROJECT'
         )
+
+        self.assertEqual(
+            len(project.stats),
+            3
+        )
+        for stat in project.stats:
+            self.assertIn(
+                stat.get('type'),
+                ['IN_PROGRESS_COUNT', 'SUBMITTED_COUNT', 'SKIPPED_COUNT']
+            )

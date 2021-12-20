@@ -36,7 +36,8 @@ MOCK_PROJECT_JSON = {
                     'category"]}}',
     'name': 'MOCK_PROJECT',
     'progress': 50,
-    'workapp': 'image-siesta'
+    'workapp': 'image-siesta',
+    'stats': ['{"type": "IN_PROGRESS_COUNT", "info": {"not_submitted": 0, "rejected": 0}}', '{"type": "SUBMITTED_COUNT", "info": {"pending_review": 0, "approved": 0}}', '{"type": "SKIPPED_COUNT", "info": {"pending_review": 0, "approved": 0}}']
 }
 
 MOCK_PROJECT_RESPONSE_JSON = {
