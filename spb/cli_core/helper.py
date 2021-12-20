@@ -18,8 +18,8 @@ class Helper:
     def init_project(self, directory_path, project):
         return self.project.init_project(directory_path, project)
 
-    def describe_projects(self):
-        self.project.describe_projects()
+    def describe_projects(self, show_options):
+        self.project.describe_projects(show_options)
 
     def upload(self, dataset_name, project, directory_path, include_label, is_forced):
         return self.label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)

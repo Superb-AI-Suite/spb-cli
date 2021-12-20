@@ -74,10 +74,10 @@ You can list all projects that belong to the currently configured profile by usi
 ```shell
 $ spb describe projects
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
-┃ NAME                                               ┃ LABELS ┃ PROGRESS ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
-│ my-project                                         │   5837 │    13.7% │
+┏━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
+┃ NAME        ┃ LABELS ┃   IN PROGRESS ┃   SUBMITTED ┃ SKIPPED ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩
+│ my-project  │   6000 │   1000 (16 %) │ 2000 (33 %) │ 0 (0 %) │
 ...
 Press any button to continue to the next page (1/10). Otherwise press ‘Q’ to quit.
 ```

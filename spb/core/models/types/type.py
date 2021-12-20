@@ -32,6 +32,20 @@ class JsonObject(Type):
         return value
 
 
+class JsonList(Type):
+    GRAPHQL_TYPE='JSON'
+
+    def _validation(self, value):
+        try:
+            if isinstance(value, str):
+                value = json.loads(value)
+            if isinstance(value, list):
+                value = [json.loads(item) if isinstance(item, str) else item for item in value]
+        except Exception as e:
+            raise AttributeTypeException(f'Invalid Json type for {self.attr_name}: value is of {str(type(value))} type')
+        return value
+
+
 @abc.abstractmethod
 class Number(Type):
     """

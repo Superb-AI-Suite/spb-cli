@@ -73,9 +73,10 @@ def describe():
     pass
 
 @describe.command()
-def projects():
+@click.option('-s', '--show', 'show_options', default='default', help='Show additional info about project for the given option : (default | reviews)')
+def projects(show_options):
     """Get all of your project in Suite"""
-    helper.describe_projects()
+    helper.describe_projects(show_options)
 
 @cli.group()
 def upload():
