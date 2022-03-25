@@ -80,6 +80,16 @@ $ spb describe projects
 │ my-project  │   6000 │   1000 (16 %) │ 2000 (33 %) │ 0 (0 %) │
 ...
 Press any button to continue to the next page (1/10). Otherwise press ‘Q’ to quit.
+
+$ spb describe project --show reviews
+
+┏━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃ NAME        ┃ LABELS ┃IN PROGRESS    ┃IN PROGRESS    ┃SUBMITTED      ┃SUBMITTED      ┃SKIPEED       ┃SKIPEED       ┃
+┃             ┃        ┃Rejected       ┃Not Submitted  ┃Approved       ┃Pending Review ┃Approved      ┃Pending Review┃
+┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ my-project  │   6000 │ 1000          │ 1000          │ 1000          │ 1000          │ 1000         │ 1000         │
+...
+Press any button to continue to the next page (1/10). Otherwise press ‘Q’ to quit.
 ```
 
 ## Uploading Dataset

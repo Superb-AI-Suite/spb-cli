@@ -8,6 +8,7 @@ import base64
 from spb.command import Command
 from spb.models.project import Project
 from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException
+from spb.utils.utils import requests_retry_session
 
 class Session:
     endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
@@ -105,8 +106,9 @@ class Session:
         }
         data = json.dumps(data)
         try:
-            response = requests.request(
-                "POST", self.endpoint, data=data, headers=self.headers)
+            with requests_retry_session() as session:
+                response = session.request(
+                    "POST", self.endpoint, data=data, headers=self.headers)
         except requests.exceptions.Timeout:
             raise APIException('Occurred Time out of this request')
         except requests.exceptions.RequestException:

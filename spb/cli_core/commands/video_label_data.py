@@ -16,6 +16,7 @@ import spb
 from spb.cli_core.utils import recursive_glob_video_paths, recursive_glob_label_files
 from spb.models.label import Label
 from spb.libs.phy_credit.phy_credit.video import build_label_info
+from spb.utils.utils import requests_retry_session
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -235,8 +236,9 @@ def _download_worker(args):
                 if not os.path.exists(new_path):
                     os.makedirs(new_path)
                 file_url = '{}image_{:08d}.{}?{}'.format(base_url, idx, ext, query)
-                r = requests.get(file_url, allow_redirects=True)
-                open(file_path, 'wb').write(r.content)
+                with requests_retry_session() as session:
+                    r = session.get(file_url, allow_redirects=True)
+                    open(file_path, 'wb').write(r.content)
         except Exception as e:
             error.update({'data':str(e)})
             data_error = error
@@ -264,7 +266,8 @@ def _upload_asset(args):
             file_name = file_info['file_name']
             file_path = F'{path}/{file_name}'
             data = open(file_path,'rb').read()
-            response = requests.put(file_info['presigned_url'],data=data)
+            with requests_retry_session() as session:
+                response = session.put(file_info['presigned_url'], data=data)
             
     except Exception as e:
         _set_error_result(asset_video['data_key'], result, str(e), e)
@@ -313,7 +316,8 @@ def _update_label(args):
         
         label_info = build_label_info(label_interface=label_interface, result=json_data['result'])
         info_json = label_info.build_info()
-        write_response = requests.put(described_label.info_write_presigned_url ,data=json.dumps(info_json))
+        with requests_retry_session() as session:
+            write_response = session.put(described_label.info_write_presigned_url, data=json.dumps(info_json))
 
         if 'tags' in json_data:
             label['tags'] = json_data['tags']

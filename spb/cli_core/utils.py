@@ -31,27 +31,28 @@ tests.append(test_jpeg2)
 tests.append(test_jpeg3)
 
 def recursive_glob_image_files(input_path):
-    support_img_format = ['png', 'jpg', 'bmp', 'jpeg', 'tiff', 'tif']
+    support_img_format = ['png', 'jpg', 'bmp', 'jpeg']
     imgs_path = {}
     files_path = sorted(glob.glob(os.path.join(input_path, "**/*"), recursive=True))
-    for file_path in files_path:
+    for file_path in select_image_files(files_path):
         if '@' not in file_path and not os.path.isdir(file_path):
             img_format = imghdr.what(file_path)
             if img_format in support_img_format:
                 key = extract_file_key(input_path, file_path)
                 imgs_path[key] = file_path
+
     return imgs_path
 
 def select_image_files(file_list):
     image_file_list = []
-    support_img_format = ('.png', '.jpg', '.bmp', '.jpeg', '.tiff', '.tif')
+    support_img_format = ('.png', '.jpg', '.bmp', '.jpeg')
     for file_name in file_list:
         if file_name.lower().endswith(support_img_format):
             image_file_list.append(file_name)
     return image_file_list
 
 def recursive_glob_video_paths(input_path):
-    support_img_format = ['png', 'jpg', 'bmp', 'jpeg', 'tiff', 'tif']
+    support_img_format = ['png', 'jpg', 'bmp', 'jpeg']
     video_paths = {}
     for dirpath, dirnames, files in os.walk(input_path):
         if len(files) != 0 and dirpath != input_path:

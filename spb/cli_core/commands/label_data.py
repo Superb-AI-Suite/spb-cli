@@ -14,6 +14,7 @@ from collections import ChainMap
 
 import spb
 from spb.cli_core.utils import recursive_glob_image_files, recursive_glob_label_files
+from spb.utils.utils import requests_retry_session
 from spb.labels import Label
 from spb.labels.label import Tags
 from spb.labels.serializer import LabelInfoBuildParams
@@ -282,8 +283,9 @@ def _download_worker(args):
         try:
             data_url = label.data_url
             path = f'{path}'
-            r = requests.get(data_url, allow_redirects=True)
-            open(path, 'wb').write(r.content)
+            with requests_retry_session() as session:
+                r = session.get(data_url, allow_redirects=True)
+                open(path, 'wb').write(r.content)
         except Exception as e:
             error.update({'data':str(e)})
             data_error = error
@@ -305,7 +307,14 @@ def _upload_asset(args):
     [project_id, asset_image, result] = args
     try:
         command = spb.Command(type='create_data')
-        spb.run(command=command, option=asset_image, optional={'projectId': project_id})
+        result = spb.run(command=command, option=asset_image, optional={'projectId': project_id})
+        
+        presigned_url = result.presigned_url
+        file_path = asset_image['file']
+        data = open(file_path,'rb').read()
+        with requests_retry_session() as session:
+            response = session.put(presigned_url, data=data)
+            
     except Exception as e:
         _set_error_result(asset_image['data_key'], result, str(e), e)
         pass

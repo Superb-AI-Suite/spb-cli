@@ -92,7 +92,12 @@ def upload():
 @click.option('-y', '--yes', 'is_forced', required=False, default=False, help='Say YES to all prompts', is_flag=True)
 def dataset(name, project_name, directory_path, include_label, is_forced):
     """Upload images to your Suite project"""
-    project = _get_project_with_name(project_name)
+    project = None
+    try:
+        project = _get_project_with_name(project_name)
+    except:
+        click.echo("Please check your project name")
+
     if not project:
         return
 
