@@ -8,6 +8,7 @@ import base64
 from collections import deque
 from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException, NotFoundException
 from spb.core.models.attrs import AttributeEncoder
+from spb.utils.utils import requests_retry_session
 
 logger = logging.getLogger()
 
@@ -117,8 +118,10 @@ class BaseSession:
             'variables': values
         }
         request_param = json.dumps(data, cls=AttributeEncoder)
+        response = None
         try:
-            response = requests.post(self.endpoint, data=request_param, headers=self.headers)
+            with requests_retry_session() as session:
+                response = session.post(self.endpoint, data=request_param, headers=self.headers)
         except requests.exceptions.HTTPError as e:
             self.history.appendleft({'APIException': data})
             raise APIException(f'HTTP Error: {repr(e)}')
@@ -138,7 +141,7 @@ class BaseSession:
             error = result['error']
             if error['message'] == 'Forbidden':
                 self.history.appendleft({'AuthenticateFailedException': data})
-                raise AuthenticateFailedException('Authencation Failed Exception : Check your credentials')
+                raise AuthenticateFailedException('Authentication Failed Exception : Check your credentials')
             elif error['message'] == 'Limit Exceeded':
                 self.history.appendleft({'AuthenticateFailedException': data})
                 raise APILimitExceededException('Limit Exceeded Exception : API request limit exceeded')

@@ -21,6 +21,7 @@ class Data(Model):
     file_size = Number(property_name='fileSize')
     dataset = String(property_name='dataset')
     data_key = String(property_name='dataKey')
+    presigned_url = String(property_name='presignedURL')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -39,8 +40,10 @@ class Data(Model):
             elif os.path.exists(value):
                 file_size = os.path.getsize(value)
                 file_name = os.path.basename(value)
-                file_contents = DataURI.from_file(value)
-                file_contents = file_contents.replace('\n', '') # I don't know why
+                # file_contents = DataURI.from_file(value)
+                # file_contents = file_contents.replace('\n', '') # I don't know why
+                # file_contents가 Null이면 S3 url 반환 / None이 아니면 Data 직접 전송
+                file_contents = ""
                 super().__setattr__('file_name', file_name)
             elif is_data_url(value):
                 #TODO
@@ -52,7 +55,8 @@ class Data(Model):
                 content_type = response.headers["content-type"]
                 encoded_body = base64.b64encode(response.content)
                 file_size = reshead.headers['Content-length']
-                file_contents = f"data:{content_type};base64,{encoded_body.decode()}"
+                # file_contents = f"data:{content_type};base64,{encoded_body.decode()}"
+                file_contents = ""
             super().__setattr__('file_size', file_size)
             super().__setattr__('file', file_contents)
         else:

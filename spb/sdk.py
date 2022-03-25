@@ -40,6 +40,7 @@ from spb.labels.manager import LabelManager
 from spb.projects.manager import ProjectManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.serializer import LabelInfoBuildParams
+from spb.utils.utils import requests_retry_session
 
 logger = logging.getLogger()
 
@@ -79,11 +80,11 @@ class Client(object):
     ##############################
 
     @classmethod
-    def get_project(cls, name):
+    def get_project(cls, project_name):
         manager = ProjectManager()
-        project = manager.get_project(name=name)
+        project = manager.get_project(name=project_name)
         if project is None:
-            print('[WARNING] Project {} not found'.format(name))
+            print('[WARNING] Project {} not found'.format(project_name))
             return None
 
         return project
@@ -184,7 +185,11 @@ class Client(object):
         option = {'file': path, 'file_name': name, 'dataset': dataset_name, 'data_key': key}
 
         try:
-            return spb.run(command=command, optional={'projectId': self._project.id}, option=option)
+            result = spb.run(command=command, optional={'projectId': self._project.id}, option=option)
+            presigned_url = result.presigned_url
+            data = open(path,'rb').read()
+            with requests_retry_session() as session:
+                response = session.put(presigned_url,data=data)
 
         except Exception as e:
             print('[WARNING] Duplicate data key. Upload failed')
@@ -245,7 +250,8 @@ class Client(object):
                 file_name = file_info['file_name']
                 file_path = os.path.join(path, file_name)
                 data = open(file_path,'rb').read()
-                response = requests.put(file_info['presigned_url'], data=data)
+                with requests_retry_session() as session:
+                    response = session.put(file_info['presigned_url'], data=data)
         except Exception as e:
             print('[WARNING] Duplicate data key. Upload failed')
 
@@ -524,8 +530,10 @@ class VideoDataHandle(object):
 
     def _get_result(self):
         try:
-            read_response = requests.get(self._data.info_read_presigned_url)
-            label_result = read_response.json()
+            label_result = None
+            with requests_retry_session() as session:
+                read_response = session.get(self._data.info_read_presigned_url)
+                label_result = read_response.json()
             return label_result['result']
         except:
             return None
@@ -543,7 +551,8 @@ class VideoDataHandle(object):
         info = label_info.build_info()
 
         self._upload_to_suite(info={'tags': info['tags']})
-        write_response = requests.put(self._data.info_write_presigned_url, data=json.dumps(info))
+        with requests_retry_session() as session:
+            write_response = session.put(self._data.info_write_presigned_url, data=json.dumps(info))
 
     def get_object_labels(self):
         result = self._get_result()
@@ -564,7 +573,8 @@ class VideoDataHandle(object):
         info = label_info.build_info()
 
         self._upload_to_suite(info={'tags': info['tags']})
-        write_response = requests.put(self._data.info_write_presigned_url, data=json.dumps(info))
+        with requests_retry_session() as session:
+            write_response = session.put(self._data.info_write_presigned_url, data=json.dumps(info))
 
     def get_category_labels(self):
         result = self._get_result()

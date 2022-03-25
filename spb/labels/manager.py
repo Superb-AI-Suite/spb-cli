@@ -10,6 +10,7 @@ from .session import Session
 from .query import Query
 from .label import Label, WorkappType
 from spb.exceptions import ParameterException, APIException
+from spb.utils.utils import requests_retry_session
 
 logger = logging.getLogger()
 
@@ -124,7 +125,8 @@ class LabelManager(BaseManager):
             return label
 
         try:
-            read_response = requests.get(label.info_read_presigned_url)
+            with requests_retry_session() as session:
+                read_response = session.get(label.info_read_presigned_url)
             if read_response.status_code == requests.codes.not_found:
                 label.result = None
                 return label
@@ -137,8 +139,9 @@ class LabelManager(BaseManager):
     def set_info_with_url(self, label_info: dict, label: Label = None):
         if label.info_write_presigned_url is None:
             return label
-        request_result = requests.put(label.info_write_presigned_url, data=json.dumps(label_info))
-        request_result.raise_for_status()
+        with requests_retry_session() as session:
+            request_result = session.put(label.info_write_presigned_url, data=json.dumps(label_info))
+            request_result.raise_for_status()
 
     def get_related_labels_by_label(self, project_id:uuid.UUID, label_id:uuid.UUID, page:int=1, page_size:int=10):
         self.query.query_id = 'relatedLabels'

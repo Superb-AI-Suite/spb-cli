@@ -6,7 +6,7 @@ from spb.orm import Model
 from spb.orm import AttributeModel
 from spb.orm import ListAttribute
 from spb.orm.type import String, ID, Number, Object, List
-
+from spb.utils.utils import requests_retry_session
 
 class Stats(ListAttribute):
     def __init__(self, *args, **kwargs):
@@ -42,7 +42,9 @@ class VideoLabel(Model):
 
     def toJson(self):
         try:
-            response = requests.get(self.info_read_presigned_url)
+            response = None
+            with requests_retry_session() as session:
+                response = session.get(self.info_read_presigned_url)
             info_json = response.json()
             result = info_json['result']
         except:
