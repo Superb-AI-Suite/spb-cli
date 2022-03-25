@@ -59,7 +59,7 @@ setup(
         "webencodings==0.5.1",
         "zipp==3.1.0",
         "scikit-image>=0.16.1",
-        "boto3>=1.17.82",
+        "boto3>=1.24.26",
         "natsort>=7.1.0",
         "semver==2.13.0",
     ],
