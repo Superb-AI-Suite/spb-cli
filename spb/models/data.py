@@ -32,7 +32,7 @@ class Data(Model):
             setattr(self, 'file', kwargs['file'])
 
     def __setattr__(self, name, value):
-        if name is 'file':
+        if name == 'file':
             file_contents = None
             file_size = None
             if value is None:

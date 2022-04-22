@@ -31,8 +31,9 @@ import json
 import glob
 import requests
 import logging
-
+# import rich.progress
 from natsort import natsorted
+from spb.exceptions import CustomBaseException, ParameterException
 from spb.labels import Label
 from spb.projects import Project
 from spb.libs.phy_credit.phy_credit.video import build_label_info
@@ -40,6 +41,7 @@ from spb.labels.manager import LabelManager
 from spb.projects.manager import ProjectManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.serializer import LabelInfoBuildParams
+from spb.tasks.manager import TaskManager
 from spb.utils.utils import requests_retry_session
 
 logger = logging.getLogger()
@@ -116,8 +118,7 @@ class Client(object):
 
     def get_num_data(self, tags=[], **kwargs):
         if self._project is None:
-            print('[WARNING] Project is not described')
-            return None
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
 
         manager = LabelManager()
         tags = [{'name': tag} for tag in tags]
@@ -131,8 +132,7 @@ class Client(object):
 
     def get_data_page(self, page_idx, page_size=10, num_data=None, tags=[], dataset=None, data_key=None, **kwargs):
         if self._project is None:
-            print('[WARNING] Project is not described')
-            return None
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
 
         if num_data is None:
             num_data = self.get_num_data(tags=tags, **kwargs)
@@ -169,8 +169,8 @@ class Client(object):
 
     def upload_image(self, path, dataset_name, key=None, name=None):
         if self._project is None:
-            print('[WARNING] Project is not described')
-            return
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+
         if not os.path.isfile(path):
             print('[WARNING] Invalid path. Upload failed')
             return
@@ -192,12 +192,11 @@ class Client(object):
                 response = session.put(presigned_url,data=data)
 
         except Exception as e:
-            print('[WARNING] Duplicate data key. Upload failed')
+            raise e
 
     def upload_image_s3(self, bucket_name, path, dataset_name, key=None):
         if self._project is None:
-            print('[WARNING] Project is not described')
-            return
+            raise ParameterException(f'[ERROR] Project ID is not described.')
 
         name = path.split('/')[-1]
         ext = path.split('.')[-1]
@@ -208,7 +207,7 @@ class Client(object):
             return self.upload_image(temp_path, dataset_name, key, name=name)
 
         except Exception as e:
-            print('[WARNING] Cannot access S3 path. Check your access permission. Upload failed')
+            raise CustomBaseException('[ERROR] Cannot access S3 path. Check your access permission. Upload failed')
 
         finally:
             if os.path.isfile(temp_path):
@@ -216,19 +215,16 @@ class Client(object):
 
     def upload_video(self, path, dataset_name, key=None):
         if self._project is None:
-            print('[WARNING] Project is not described')
-            return
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
 
         if not os.path.isdir(path):
-            print('[WARNING] Invalid path. Upload failed')
-            return
+            raise ParameterException(f'[ERROR] Invalid path. Upload failed')
 
         # TODO: support_img_format is const
         support_img_format = ('png', 'jpg', 'bmp', 'jpeg', 'tiff', 'tif')
         file_names = [os.path.basename(file_path) for file_path in glob.glob(os.path.join(path, '*')) if file_path.lower().endswith(support_img_format)]
         if len(file_names) == 0:
-            print('[WARNING] Invalid path. Upload failed')
-            return
+            raise ParameterException(f'[ERROR] Invalid path. Upload failed')
 
         if key is None:
             key = os.path.split(path)[-1]
@@ -252,8 +248,127 @@ class Client(object):
                 data = open(file_path,'rb').read()
                 with requests_retry_session() as session:
                     response = session.put(file_info['presigned_url'], data=data)
+
         except Exception as e:
-            print('[WARNING] Duplicate data key. Upload failed')
+            raise CustomBaseException(e)
+
+
+    def get_task_list(self, status_in, page:int=1, page_size:int=10):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            task_list = manager.get_task_list(
+                project_id=self._project.id,
+                status_in=status_in,
+                page=page, 
+                page_size=page_size
+            )
+            return task_list
+        except Exception as e:
+            raise CustomBaseException(e)
+            
+
+    def get_task_by_id(self, task_id: str):
+        if task_id is None:
+            raise ParameterException(f'[ERROR] Task ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            task_detail = manager.get_task_by_id(task_id=task_id)
+            return task_detail
+        except Exception as e:
+            return
+
+    def get_task_progress_by_id(self, task_id: str):
+        if task_id is None:
+            raise ParameterException(f'[ERROR] Task ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            task_progress = manager.get_task_progress_by_id(
+                task_id=task_id
+            )
+            return task_progress
+        except Exception as e:
+            raise CustomBaseException(e)
+
+    def wait_until_complete(self, task_id: str):
+        if task_id is None:
+            raise ParameterException(f'[ERROR] Task ID does not exist.')
+        
+        
+        try:
+            manager = TaskManager()
+            # task_progress = manager.get_task_progress_by_id(
+            #     task_id=task_id
+            # )
+            # total_progress = int(task_progress.total_count)
+            # prev_progress = int(task_progress.progress)
+            
+            # with rich.progress.Progress() as progress:
+            #     task = progress.add_task(
+            #         "Processing...", 
+            #         completed=prev_progress, 
+            #         total=int(total_progress)
+            #     )
+
+            #     while True:
+            #         time.sleep(5)
+            #         task_progress = manager.get_task_progress_by_id(
+            #             task_id=task_id
+            #         )
+                    
+            #         progress.update(
+            #             task, 
+            #             advance=int(task_progress.progress)-prev_progress, 
+            #             total=int(task_progress.total_count)
+            #         )
+            #         prev_progress = int(task_progress.progress)
+            #         if(task_progress.status == 'FINISHED'):
+            #             break
+            #         elif(task_progress.status == 'FAILED'):
+            #             print('[ERROR] Task Failed')
+            #             break
+            #         elif(task_progress.status == 'CANCELED'):
+            #             print('[WARNING] Task has been canceled')
+            #             break
+
+            while(True):
+                time.sleep(5)
+                task_progress = manager.get_task_progress_by_id(
+                    task_id=task_id
+                )
+                if(task_progress.status == 'FINISHED'):
+                    break
+                elif(task_progress.status == 'FAILED'):
+                    print('[ERROR] Task Failed')
+                    break
+                elif(task_progress.status == 'CANCELED'):
+                    print('[WARNING] Task has been canceled')
+                    break
+
+            print(f"Task Completed")
+            return task_progress
+            
+        except Exception as e:
+            raise CustomBaseException(e)
+
+    def request_auto_label_task(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            auto_label_task_request = manager.request_auto_label_task(
+                project_id=self._project.id,
+                tags=tags
+            )
+            
+            return auto_label_task_request
+        except Exception as e:
+            raise CustomBaseException(e)
 
 
 class DataHandle(object):
