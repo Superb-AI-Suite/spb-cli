@@ -371,6 +371,169 @@ class Client(object):
             raise CustomBaseException(e)
 
 
+    def assign_reviewer(self, tags: list=[], distribution_method: str="EQUAL", work_assignee: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        if len(work_assignee) == 0:
+            raise ParameterException(f'[ERROR] Number of work assignee must be greater than 0.')
+
+        if distribution_method.upper() not in ['EQUAL', 'PROPORTIONAL']:
+            raise ParameterException(f'[ERROR] Distribution method must be EQUAL or PROPORTIONAL.')
+
+        label_manager = LabelManager()
+        limit = label_manager.get_labels_count(
+            project_id = self._project.id,
+            tags = [{'name': tag} for tag in tags]
+        )
+        
+        try:
+            manager = TaskManager()
+            assign_reviewer_task = manager.assign_reviewer(
+                project_id=self._project.id,
+                tags=tags,
+                limit=limit,
+                distribution_method=distribution_method.upper(),
+                work_assignee=work_assignee
+            )
+            return assign_reviewer_task
+
+        except Exception as e:
+            raise CustomBaseException(e)
+    
+    def unassign_reviewer(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            unassign_reviewer_task = manager.unassign_reviewer(
+                project_id=self._project.id,
+                tags=tags,
+            )
+            return unassign_reviewer_task
+
+        except Exception as e:
+            raise CustomBaseException(e)
+
+
+    def assign_labeler(self, tags: list=[], distribution_method: str="EQUAL", work_assignee: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+
+        if len(work_assignee) == 0:
+            raise ParameterException(f'[ERROR] Number of work assignee must be greater than 0.')
+
+        if distribution_method.upper() not in ['EQUAL', 'PROPORTIONAL']:
+            raise ParameterException(f'[ERROR] Distribution method must be EQUAL or PROPORTIONAL.')
+        
+        label_manager = LabelManager()
+        limit = label_manager.get_labels_count(
+            project_id = self._project.id,
+            tags = [{'name': tag} for tag in tags]
+        )
+
+        try:
+            manager = TaskManager()
+            assign_labeler_task = manager.assign_labeler(
+                project_id=self._project.id,
+                tags=tags,
+                limit=limit,
+                distribution_method=distribution_method.upper(),
+                work_assignee=work_assignee
+            )
+            return assign_labeler_task
+
+        except Exception as e:
+            raise CustomBaseException(e)
+
+    
+    def unassign_labeler(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            unassign_labeler_task = manager.unassign_labeler(
+                project_id=self._project.id,
+                tags=tags,
+            )
+            return unassign_labeler_task
+
+        except Exception as e:
+            raise CustomBaseException(e)
+
+    
+    def initialize_label(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            initialize_label_task_request = manager.initialize_label(
+                project_id=self._project.id,
+                tags=tags
+            )
+            
+            return initialize_label_task_request
+        except Exception as e:
+            raise CustomBaseException(e)
+
+
+
+    def submit_label(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            submit_label_task_request = manager.submit_label(
+                project_id=self._project.id,
+                tags=tags
+            )
+            
+            return submit_label_task_request
+        except Exception as e:
+            raise CustomBaseException(e)
+
+
+
+    def skip_label(self, tags: list=[]):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+        try:
+            manager = TaskManager()
+            skip_task_request = manager.skip_label(
+                project_id=self._project.id,
+                tags=tags
+            )
+            
+            return skip_task_request
+        except Exception as e:
+            raise CustomBaseException(e)
+
+
+    # TO BE ADDED
+    # def edit_label_tags(self, label_ids: list=[], add_tags: list=[], remove_tags: list=[]):
+    #     if self._project is None:
+    #         raise ParameterException(f'[ERROR] Project ID does not exist.')
+        
+    #     try:
+    #         manager = TaskManager()
+    #         edit_label_tags_task = manager.edit_label_tags(
+    #             project_id=self._project.id,
+    #             label_ids=label_ids,
+    #             add_tags=add_tags,
+    #             remove_tags=remove_tags
+    #         )
+    #         return edit_label_tags_task
+
+    #     except Exception as e:
+    #         raise CustomBaseException(e)
+
+
+
 class DataHandle(object):
     _IMAGE_URL_LIFETIME_IN_SECONDS = 3600
 

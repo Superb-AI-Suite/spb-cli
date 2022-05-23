@@ -12,7 +12,7 @@ from spb.core.models.attrs import AttributeEncoder
 logger = logging.getLogger()
 
 class BaseSession:
-    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
+    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + '/graphql'
     headers = {
         'content-type': 'application/json',
         'cache-control': 'no-cache',
