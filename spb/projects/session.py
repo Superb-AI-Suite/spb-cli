@@ -8,7 +8,7 @@ from .project import Project
 
 
 class Session(BaseSession):
-    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/v2/graphql")
+    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + '/v2/graphql'
     
     def extract_project_list(self, response, query_id):
         response_json = response.json()

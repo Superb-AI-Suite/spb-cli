@@ -46,3 +46,114 @@ class Query(BaseQuery):
         if status_in is not None:
             values.update({"statusIn": status_in})
         return values
+
+
+    def build_assign_labeler_task_query(self, project_id, tags, limit, distribution_method, work_assignee):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!, $limit:Int!, $distributionMethod:String!, $workAssignee:[String!]!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter, limit: $limit, distributionMethod: $distributionMethod workAssignee: $workAssignee) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+            "limit": limit,
+            "distributionMethod": distribution_method,
+            "workAssignee": work_assignee
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_unassign_labeler_task_query(self, project_id, tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_assign_reviewer_task_query(self, project_id, tags, limit, distribution_method, work_assignee):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!, $limit:Int!, $distributionMethod:String!, $workAssignee:[String!]!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter, limit: $limit, distributionMethod: $distributionMethod workAssignee: $workAssignee) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+            "limit": limit,
+            "distributionMethod": distribution_method,
+            "workAssignee": work_assignee
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_unassign_reviewer_task_query(self, project_id, tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_initialize_label_task_query(self, project_id, tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+    def build_submit_label_task_query(self, project_id, tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_skip_label_task_query(self, project_id, tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $filter:String!) \
+                            {{{self.query_id}(projectId: $projectId, filter: $filter) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "filter": unquote(urlencode([("tags_name_all[]", tag) for tag in tags])),
+        }
+
+        self._reset_variables()
+        return self.query_string, values
+
+
+    def build_edit_label_tags_query(self, project_id, label_ids, add_tags, remove_tags):
+        self.query_string = f'mutation {self.query_id}($projectId:String!, $labelIds:[String!]!, $addTags:[String!]!, $removeTags:[String!]!) \
+                            {{{self.query_id}(projectId: $projectId, labelIds: $labelIds, addTags: $addTags, removeTags: $removeTags) \
+                            {{id}}}}'
+        values = {
+            "projectId": str(project_id),
+            "labelIds": label_ids,
+            "addTags": add_tags,
+            "removeTags": remove_tags
+        }
+        
+        self._reset_variables()
+        return self.query_string, values

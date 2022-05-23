@@ -6,8 +6,7 @@ from spb.exceptions import APIFormatException
 
 
 class Session(BaseSession):
-    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/v2/graphql")
-
+    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + '/v2/graphql'
     def get_count_and_data_from_response(self, response, query_id):
         response_json = response.json()
         self._check_errors(response_json)
