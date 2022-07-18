@@ -17,8 +17,11 @@ logger = logging.getLogger()
 
 class LabelManager(BaseManager):
 
-    def __init__(self):
-        self.session = Session()
+    def __init__(self, team_name=None, access_key=None):
+        self.session = Session(
+            team_name = team_name,
+            access_key = access_key
+        )
         self.query = Query()
 
     def get_labels_count(self, project_id:uuid.UUID, dataset=None, data_key=None, tags:list=[], label_type=None):

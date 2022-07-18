@@ -21,6 +21,11 @@ class ParameterException(SDKException):
     super(ParameterException, self).__init__(message, code)
 
 
+class DoesNotSupportedException(SDKException):
+  def __init__(self, message, code='200402'):
+    super(DoesNotSupportedException, self).__init__(message, code)
+
+
 class APIException(CustomBaseException):
     def __init__(self, message, code='200500'):
         super(APIException, self).__init__(message, code)

@@ -6,8 +6,11 @@ from spb.core.manager import BaseManager
 
 class TaskManager(BaseManager):
     
-    def __init__(self):
-        self.session = Session()
+    def __init__(self, team_name=None, access_key=None):
+        self.session = Session(
+            team_name = team_name,
+            access_key = access_key
+        )
         self.query = Query()
 
 
