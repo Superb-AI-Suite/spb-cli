@@ -141,12 +141,14 @@ class Model(AttributeContainer, metaclass=ModelMeta):
                 result.append(self._attr_types[name].attr_name)
         return result
 
-    def _get_user_selected_property_names(self, include: list = None, exclude: list = None):
-        name_list = self._attr_types.keys()
+    def _get_user_selected_property_names(self, include: list = None, exclude: list = []):
+        name_list = list(self._attr_types.keys())
 
         if include is not None:
             name_list = include
         if exclude is not None:
-            name_list = list(map(operator.sub, name_list, exclude))
+            for item in exclude:
+                name_list.remove(item)
+
 
         return name_list

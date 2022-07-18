@@ -31,9 +31,10 @@ import json
 import glob
 import requests
 import logging
+import uuid
 # import rich.progress
 from natsort import natsorted
-from spb.exceptions import CustomBaseException, ParameterException
+from spb.exceptions import CustomBaseException, DoesNotSupportedException, ParameterException
 from spb.labels import Label
 from spb.projects import Project
 from spb.libs.phy_credit.phy_credit.video import build_label_info
@@ -42,6 +43,7 @@ from spb.projects.manager import ProjectManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.serializer import LabelInfoBuildParams
 from spb.tasks.manager import TaskManager
+from spb.exports.manager import ExportManager
 from spb.utils.utils import requests_retry_session
 
 logger = logging.getLogger()
@@ -59,12 +61,21 @@ class Client(object):
         if team_name is not None and access_key is not None:
             print(f'[INFO] Usage: Client has been started with {team_name}')
             spb.setup_default_session(team_name = team_name, access_key = access_key)
+            self.credential = {
+                'team_name' : team_name,
+                'access_key': access_key,
+            }
+        else:
+            self.credential = {
+                'team_name': None,
+                'access_key': None
+            }
 
         if project_name is None:
             print('[WARNING] Client cannot be used to describe label without project')
             self._project = None
         else:
-            self._project = Client.get_project(project_name)
+            self._project = self.get_project(project_name)
         self._s3 = boto3.client('s3')
 
     ##############################
@@ -81,9 +92,8 @@ class Client(object):
     # Constructor
     ##############################
 
-    @classmethod
-    def get_project(cls, project_name):
-        manager = ProjectManager()
+    def get_project(self, project_name):
+        manager = ProjectManager(self.credential['team_name'], self.credential['access_key'])
         project = manager.get_project(name=project_name)
         if project is None:
             print('[WARNING] Project {} not found'.format(project_name))
@@ -91,9 +101,8 @@ class Client(object):
 
         return project
 
-    @classmethod
-    def get_projects(cls, page: int = 1, page_size: int = 10):
-        manager = ProjectManager()
+    def get_projects(self, page: int = 1, page_size: int = 10):
+        manager = ProjectManager(self.credential['team_name'], self.credential['access_key'])
         count, projects = manager.get_project_list(page = page, page_size = page_size)
         return (count, projects)
 
@@ -120,7 +129,7 @@ class Client(object):
         if self._project is None:
             raise ParameterException(f'[ERROR] Project ID does not exist.')
 
-        manager = LabelManager()
+        manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
         tags = [{'name': tag} for tag in tags]
         option = {'project_id': self._project.id, 'tags': tags, **kwargs}
         num_data = manager.get_labels_count(**option)
@@ -150,9 +159,9 @@ class Client(object):
             option = {'project_id': self._project.id, 'tags': tags, **kwargs}
             data_page, _ = spb.run(command=command, option=option, page=page_idx+1, page_size=page_size)
             for data in data_page:
-                yield VideoDataHandle(data, self._project)
+                yield VideoDataHandle(data, self._project, self.credential)
         else:
-            manager = LabelManager()
+            manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
             tags = [{'name': tag} for tag in tags]
             option = {
                 'project_id': self._project.id,
@@ -163,9 +172,27 @@ class Client(object):
                 'data_key': data_key,
                 **kwargs
             }
-            count, data_page = manager.get_labels(**option)
+            _, data_page = manager.get_labels(**option)
             for data in data_page:
-                yield DataHandle(data, self._project)
+                yield DataHandle(data, self._project, self.credential)
+    
+    def get_data(self, id:uuid.UUID):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        if id is None:
+            raise ParameterException(f'[ERROR] ID is required.')
+        
+        workapp = self._project.workapp
+        if workapp == 'video-siesta':
+            raise DoesNotSupportedException('[ERROR] Video does not supported.')
+        else:
+            manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
+            label = manager.get_label(
+                project_id=self._project.id,
+                id=id
+            )
+            if label is not None:
+                return DataHandle(label, self._project, self.credential)
 
     def upload_image(self, path, dataset_name, key=None, name=None):
         if self._project is None:
@@ -252,13 +279,37 @@ class Client(object):
         except Exception as e:
             raise CustomBaseException(e)
 
+    def get_export_list(self, page:int=1, page_size:int=10):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        manager = ExportManager(self.credential['team_name'], self.credential['access_key'])
+        exports = manager.get_exports(
+            project_id = self._project.id,
+            page=page,
+            page_size=page_size
+        )
+        return exports
+
+    def get_export(self, id:uuid.UUID=None, name:str=None):
+        if self._project is None:
+            raise ParameterException(f'[ERROR] Project ID does not exist.')
+        if id is None and name is None:
+            raise ParameterException(f'[ERROR] id or name is required.')
+
+        manager = ExportManager(self.credential['team_name'], self.credential['access_key'])
+        export = manager.get_export(
+            project_id = self._project.id,
+            id=id,
+            name=name
+        )
+        return export
 
     def get_task_list(self, status_in, page:int=1, page_size:int=10):
         if self._project is None:
             raise ParameterException(f'[ERROR] Project ID does not exist.')
-        
+
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             task_list = manager.get_task_list(
                 project_id=self._project.id,
                 status_in=status_in,
@@ -275,7 +326,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Task ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             task_detail = manager.get_task_by_id(task_id=task_id)
             return task_detail
         except Exception as e:
@@ -286,7 +337,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Task ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             task_progress = manager.get_task_progress_by_id(
                 task_id=task_id
             )
@@ -300,7 +351,7 @@ class Client(object):
         
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             # task_progress = manager.get_task_progress_by_id(
             #     task_id=task_id
             # )
@@ -360,7 +411,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             auto_label_task_request = manager.request_auto_label_task(
                 project_id=self._project.id,
                 tags=tags
@@ -381,14 +432,14 @@ class Client(object):
         if distribution_method.upper() not in ['EQUAL', 'PROPORTIONAL']:
             raise ParameterException(f'[ERROR] Distribution method must be EQUAL or PROPORTIONAL.')
 
-        label_manager = LabelManager()
+        label_manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
         limit = label_manager.get_labels_count(
             project_id = self._project.id,
             tags = [{'name': tag} for tag in tags]
         )
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             assign_reviewer_task = manager.assign_reviewer(
                 project_id=self._project.id,
                 tags=tags,
@@ -406,7 +457,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             unassign_reviewer_task = manager.unassign_reviewer(
                 project_id=self._project.id,
                 tags=tags,
@@ -427,14 +478,14 @@ class Client(object):
         if distribution_method.upper() not in ['EQUAL', 'PROPORTIONAL']:
             raise ParameterException(f'[ERROR] Distribution method must be EQUAL or PROPORTIONAL.')
         
-        label_manager = LabelManager()
+        label_manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
         limit = label_manager.get_labels_count(
             project_id = self._project.id,
             tags = [{'name': tag} for tag in tags]
         )
 
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             assign_labeler_task = manager.assign_labeler(
                 project_id=self._project.id,
                 tags=tags,
@@ -453,7 +504,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             unassign_labeler_task = manager.unassign_labeler(
                 project_id=self._project.id,
                 tags=tags,
@@ -469,7 +520,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             initialize_label_task_request = manager.initialize_label(
                 project_id=self._project.id,
                 tags=tags
@@ -486,7 +537,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             submit_label_task_request = manager.submit_label(
                 project_id=self._project.id,
                 tags=tags
@@ -503,7 +554,7 @@ class Client(object):
             raise ParameterException(f'[ERROR] Project ID does not exist.')
         
         try:
-            manager = TaskManager()
+            manager = TaskManager(self.credential['team_name'], self.credential['access_key'])
             skip_task_request = manager.skip_label(
                 project_id=self._project.id,
                 tags=tags
@@ -537,10 +588,9 @@ class Client(object):
 class DataHandle(object):
     _IMAGE_URL_LIFETIME_IN_SECONDS = 3600
 
-    def __init__(self, data, project):
+    def __init__(self, data, project, credential=None):
         super().__init__()
-
-        manager = LabelManager()
+        self.credential = credential
         if data.project_id is None or data.id is None:
             print('[ERROR] Data Handler cannot be initiated.')
             return
@@ -700,7 +750,7 @@ class DataHandle(object):
             print('[ERROR] add_object_list doesn\'t support.')
 
     def update_data(self):
-        manager = LabelManager()
+        manager = LabelManager(self.credential['team_name'], self.credential['access_key'])
         build_params = self._label_build_params if self._data.workapp == WorkappType.IMAGE_SIESTA.value else None
         self._data = manager.update_label(label=self._data, info_build_params=build_params)
         if build_params is not None:
@@ -718,9 +768,9 @@ class DataHandle(object):
 class VideoDataHandle(object):
     _VIDEO_URL_LIFETIME_IN_SECONDS = 3600
 
-    def __init__(self, data, project):
+    def __init__(self, data, project, credential=None):
         super().__init__()
-
+        self.credential=credential
         self._data = data
         self._project = project
         self._created = time.time()
