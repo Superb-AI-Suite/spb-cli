@@ -28,3 +28,4 @@ class Export(Model):
     filter = String(property_name='filter')
     seq_no = Int(property_name='seqNo')
     filter_query = JsonObject(property_name='filterQuery')
+    state = String(property_name='state')
