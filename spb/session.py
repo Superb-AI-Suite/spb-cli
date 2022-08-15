@@ -1,6 +1,11 @@
 import os
 import configparser
-import requests
+try:
+    import requests
+except ImportError:
+    from pip._internal import main as pip
+    pip(['install', '--user', 'requests'])
+    import requests
 import json
 import copy
 import base64
