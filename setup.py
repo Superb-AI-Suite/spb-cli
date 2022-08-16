@@ -1,8 +1,6 @@
 import io
 from setuptools import setup, find_packages
 
-from spb.sdk_config import SDK_VERSION, SDK_AUTHOR, SDK_AUTHOR_EMAIL, SDK_DESCRIPTION, SDK_LICENSE, SDK_NAME, SDK_URL
-
 
 # Read in the README for the long description on PyPI
 def long_description():
@@ -10,15 +8,27 @@ def long_description():
         readme = f.read()
     return readme
 
+def load_config():
+    with io.open("spb/sdk_config.py") as fid:
+        result = {}
+        for line in fid:
+            try:
+                line.index("End of read")
+            except:
+                splitted_line = line.strip().split("=")
+                result[splitted_line[0]] = splitted_line[-1][1:-1]
+            else:
+                return result
 
+configs = load_config()
 setup(
-    name=SDK_NAME,
-    version=SDK_VERSION,
-    url=SDK_URL,
-    license=SDK_LICENSE,
-    author=SDK_AUTHOR,
-    author_email=SDK_AUTHOR_EMAIL,
-    description=SDK_DESCRIPTION,
+    name=configs.get("SDK_NAME", ""),
+    version=configs.get("SDK_VERSION", ""),
+    url=configs.get("SDK_URL", ""),
+    license=configs.get("SDK_LICENSE", ""),
+    author=configs.get("SDK_AUTHOR", ""),
+    author_email=configs.get("SDK_AUTHOR_EMAIL", ""),
+    description=configs.get("SDK_DESCRIPTION", ""),
     classifiers=[
         "Development Status :: 1 - Planning",
         "Intended Audience :: Developers",
