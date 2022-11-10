@@ -45,7 +45,7 @@ class SessionConfigurationTest(unittest.TestCase):
 
 
 class SessionActivateTest(unittest.TestCase):
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_session_is_activate_with_right_access_key(self, mock_graphql):
         response = mock_graphql.return_value
         response.status_code = 200
@@ -56,7 +56,7 @@ class SessionActivateTest(unittest.TestCase):
 
         self.assertEqual(result, True)
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_session_raises_Exceptions_with_wrong_access_key(self, mock_graphql):
         response = mock_graphql.return_value
         response.status_code = 403

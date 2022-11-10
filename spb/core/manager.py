@@ -1,4 +1,3 @@
-from spb.exceptions import ModelInitiationFailedException
 from spb.core.query import BaseQuery as Query
 from spb.core.session import BaseSession as Session
 

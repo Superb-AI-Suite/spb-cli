@@ -54,6 +54,92 @@ class QueryTest(unittest.TestCase):
             {}
         )
 
+    def test_build_cursor_query_string(self):
+        query = Query()
+        query_string, values = query.build_cursor_query(query_id = "describe_xxxx", attrs = self.dummy_attrs, response_attrs = self.dummy_response_attrs)
+        self.assertEqual(
+            query_string,
+            'query ($id:String,$info:JSONObject,$key:String,$number:Int,$number2:Float,$boolean:Boolean) {describe_xxxx(id:$id,info:$info,key:$key,number:$number,number2:$number2,boolean:$boolean){id}}'
+        )
+
+        self.assertEqual(
+            values,
+            {
+                'id': str(self.id),
+                'info': {'result': {'classes': [{'dummy_class': 'unknown_field'}]}},
+                'key': 'key',
+                'number': 1,
+                'number2': 1.0,
+                'boolean': True
+            }
+        )
+
+    def test_build_cursor_query_string_with_page_size(self):
+        query = Query()
+        query_string, values = query.build_cursor_query(query_id = "describe_xxxx", attrs = self.dummy_attrs, response_attrs = self.dummy_response_attrs, page_size = 10)
+        self.assertEqual(
+            query_string,
+            'query ($id:String,$info:JSONObject,$key:String,$number:Int,$number2:Float,$boolean:Boolean) {describe_xxxx(id:$id,info:$info,key:$key,number:$number,number2:$number2,boolean:$boolean,pageSize:$pageSize){count, next, previous, edges{id}}}'
+        )
+
+        self.assertEqual(
+            values,
+            {
+                'id': str(self.id),
+                'info': {'result': {'classes': [{'dummy_class': 'unknown_field'}]}},
+                'key': 'key',
+                'number': 1,
+                'number2': 1.0,
+                'boolean': True,
+                'pageSize': 10
+            }
+        )
+
+    def test_build_cursor_query_string_with_cursor(self):
+        query = Query()
+        query_string, values = query.build_cursor_query(query_id = "describe_xxxx", attrs = self.dummy_attrs, response_attrs = self.dummy_response_attrs, cursor = bytes("DUMMY_CURSOR", "utf-8"))
+        self.assertEqual(
+            query_string,
+            'query ($id:String,$info:JSONObject,$key:String,$number:Int,$number2:Float,$boolean:Boolean) {describe_xxxx(id:$id,info:$info,key:$key,number:$number,number2:$number2,boolean:$boolean,cursor:$cursor,pageSize:$pageSize){id}}'
+        )
+
+        self.assertEqual(
+            values,
+            {
+                'id': str(self.id),
+                'info': {'result': {'classes': [{'dummy_class': 'unknown_field'}]}},
+                'key': 'key',
+                'number': 1,
+                'number2': 1.0,
+                'boolean': True,
+                'cursor': b'DUMMY_CURSOR',
+                'pageSize': 10
+            }
+        )
+
+    def test_build_cursor_query_string_with_cursor_and_page_size(self):
+        query = Query()
+        query_string, values = query.build_cursor_query(query_id = "describe_xxxx", attrs = self.dummy_attrs, response_attrs = self.dummy_response_attrs, page_size = 1, cursor = bytes("DUMMY_CURSOR", "utf-8"))
+        self.assertEqual(
+            query_string,
+            'query ($id:String,$info:JSONObject,$key:String,$number:Int,$number2:Float,$boolean:Boolean) {describe_xxxx(id:$id,info:$info,key:$key,number:$number,number2:$number2,boolean:$boolean,cursor:$cursor,pageSize:$pageSize,pageSize:$pageSize){count, next, previous, edges{id}}}'
+        )
+
+        self.assertEqual(
+            values,
+            {
+                'id': str(self.id),
+                'info': {'result': {'classes': [{'dummy_class': 'unknown_field'}]}},
+                'key': 'key',
+                'number': 1,
+                'number2': 1.0,
+                'boolean': True,
+                'cursor': b'DUMMY_CURSOR',
+                'pageSize': 1
+            }
+        )
+
+
     def test_build_query_string_with_setter(self):
         query = Query()
         query.query_id = 'describe_xxxx'

@@ -38,14 +38,14 @@ class ProjectManagerTest(unittest.TestCase):
             {}
         )
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_project(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
         response.json.return_value = MOCK_PROJECT_RESPONSE_JSON
 
         manager = ProjectManager()
-        project = manager.get_project(name = 'MOCK_PROJECT')
+        project = manager.get_project_by_name(name = 'MOCK_PROJECT')
 
         self.assertEqual(
             project.id,
@@ -56,7 +56,7 @@ class ProjectManagerTest(unittest.TestCase):
             'MOCK_PROJECT'
         )
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_project_list(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
