@@ -23,7 +23,7 @@ class Helper:
 
     def upload(self, dataset_name, project, directory_path, include_label, is_forced):
         return self.label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)
-    
+
     def upload_video(self, dataset_name, project, directory_path, include_label, is_forced):
         return self.video_label_data.upload_data(project, dataset_name, directory_path, include_label, is_forced)
 
@@ -35,7 +35,7 @@ class Helper:
 
     def download(self, project, directory_path, is_forced):
         return self.label_data.download(project, directory_path, is_forced)
-    
+
     def download_video(self, project, directory_path, is_forced):
         return self.video_label_data.download(project, directory_path, is_forced)
 

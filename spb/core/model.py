@@ -1,15 +1,20 @@
 import copy
 import json
 import operator
-from spb.orm.utils import attrs
-from spb.exceptions import ModelInitiationFailedException, AttributeNameException, DoesNotExistsAttribute
-from spb.core.models.types import Type
+
 from spb.core.models.attrs import AttributeContainer
+from spb.core.models.types import Type
+from spb.exceptions import (
+    AttributeNameException,
+    DoesNotExistsAttribute,
+    ModelInitiationFailedException,
+)
+from spb.orm.utils import attrs
 
 
 class ModelMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
-        """ This make up some attributes
+        """This make up some attributes
         1. class attribute to types variable
         2. class attribute to values variable
 
@@ -34,7 +39,11 @@ class ModelMeta(type):
         model_attrs = {}
         for obj_name, obj in attrs.items():
             if isinstance(obj, Type):
-                model_attrs[obj_name] = obj.validation(obj.default_value) if obj.default_value is not None else None
+                model_attrs[obj_name] = (
+                    obj.validation(obj.default_value)
+                    if obj.default_value is not None
+                    else None
+                )
 
         # To save attribute types
         model_types = {}
@@ -43,9 +52,9 @@ class ModelMeta(type):
                 model_types[obj_name] = obj
 
         new_class = super_new(cls, name, bases, new_attrs, **kwargs)
-        new_class.add_to_class('_attrs', model_attrs)
-        new_class.add_to_class('_attr_types', model_types)
-        new_class.add_to_class('_attr_property_names', model_attr_property_names)
+        new_class.add_to_class("_attrs", model_attrs)
+        new_class.add_to_class("_attr_types", model_types)
+        new_class.add_to_class("_attr_property_names", model_attr_property_names)
 
         return new_class
 
@@ -54,8 +63,9 @@ class ModelMeta(type):
 
 
 class Model(AttributeContainer, metaclass=ModelMeta):
-    ''' Abstract entity model with an active record interface '''
-    RESOURCE_NAME = 'None'
+    """Abstract entity model with an active record interface"""
+
+    RESOURCE_NAME = "None"
 
     def __init__(self, *args, **kwargs):
         cls = self.__class__
@@ -70,9 +80,9 @@ class Model(AttributeContainer, metaclass=ModelMeta):
         :param string name: attribute name to access
         :returns: instance values
         """
-        cls = super().__getattribute__('__class__')
+        cls = super().__getattribute__("__class__")
         if name in cls._attrs:
-            return self.__getattribute__('attribute_values')[name]
+            return self.__getattribute__("attribute_values")[name]
         else:
             return super().__getattribute__(name)
 
@@ -97,11 +107,11 @@ class Model(AttributeContainer, metaclass=ModelMeta):
         self._check_is_name_in_attribute(name)
         return self._attr_types[name]
 
-    def __call__(self, name:str):
+    def __call__(self, name: str):
         return self.get_attribute_tuple(name)
 
     def get_attribute_tuple(self, name: str):
-        """ This returns Attribute Type and Value pair according to name
+        """This returns Attribute Type and Value pair according to name
         This tuples are used to make query
 
         :param string name: Attribute name to find
@@ -123,10 +133,10 @@ class Model(AttributeContainer, metaclass=ModelMeta):
         if name in self._attr_types:
             return True
         else:
-            raise DoesNotExistsAttribute('Does not exists attribute')
+            raise DoesNotExistsAttribute("Does not exists attribute")
 
     def get_property_names(self, include: list = None, exclude: list = None):
-        """ This returns attribute names list -> translated attribute name to graphql query attribute name
+        """This returns attribute names list -> translated attribute name to graphql query attribute name
         if attribute name is defined as num_count and Type attribute_name property is numCount
         it returns ['numCount'] when user have passed ['num_count']
 
@@ -141,7 +151,9 @@ class Model(AttributeContainer, metaclass=ModelMeta):
                 result.append(self._attr_types[name].attr_name)
         return result
 
-    def _get_user_selected_property_names(self, include: list = None, exclude: list = []):
+    def _get_user_selected_property_names(
+        self, include: list = None, exclude: list = []
+    ):
         name_list = list(self._attr_types.keys())
 
         if include is not None:
@@ -149,6 +161,4 @@ class Model(AttributeContainer, metaclass=ModelMeta):
         if exclude is not None:
             for item in exclude:
                 name_list.remove(item)
-
-
         return name_list

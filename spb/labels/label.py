@@ -31,6 +31,9 @@ class Label(Model):
     status = String(property_name='status')
     stats = PlainObjectList(property_name='stats', express=Stats)
     work_assignee = String(property_name='workAssignee')
+    reviewer = String(property_name='reviewer')
+    review_round = Int(property_name='reviewRound')
+    last_review_action = String(property_name='lastReviewAction')
     label_type = String(property_name='labelType')
     workapp = String(property_name='workapp', default_value='image-siesta')
     related_label_method = String(property_name='relatedLabelMethod')
@@ -52,12 +55,18 @@ class Label(Model):
     created_at = String(property_name='createdAt')
     last_updated_by = String(property_name='lastUpdatedBy')
     last_updated_at = String(property_name='lastUpdatedAt')
+    info_last_updated_by = String(property_name='infoLastUpdatedBy')
+    last_reviewed_at = String(property_name='lastReviewedAt')
+    
 
     def to_json(self, include_project=True, include_data=True):
         label = {
             'id': str(self.id),
             'status': self.status,
             'work_assignee': self.work_assignee,
+            'reviewer': self.reviewer,
+            'review_round': self.review_round,
+            'last_review_action': self.last_review_action,
             'workapp': self.workapp,
             'consistency_score': self.consistency_score,
             'stats': [Stats.get_data(stat) for stat in self.stats] if self.stats is not None else None,
@@ -66,7 +75,9 @@ class Label(Model):
             'created_by': self.created_by,
             'created_at': self.created_at,
             'last_updated_by': self.last_updated_by,
-            'last_updated_at': self.last_updated_at
+            'last_updated_at': self.last_updated_at,
+            'info_last_updated_by': self.info_last_updated_by,
+            'last_reviewed_at': self.last_reviewed_at,
         }
         if include_project:
             label.update({

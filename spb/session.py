@@ -1,17 +1,24 @@
-import os
-import configparser
-import requests
-import json
-import copy
 import base64
+import configparser
+import copy
+import json
+import os
+
+import requests
 
 from spb.command import Command
+from spb.exceptions import (APIException, APILimitExceededException,
+                            APIUnknownException, AuthenticateFailedException,
+                            BadRequestException, ConflictException,
+                            ForbiddenException, NotAvailableServerException,
+                            NotFoundException, SDKInitiationFailedException,
+                            UnauthorizedException)
 from spb.models.project import Project
-from spb.exceptions import APIException, SDKInitiationFailedException, AuthenticateFailedException, APILimitExceededException, APIUnknownException
 from spb.utils.utils import requests_retry_session
 
+
 class Session:
-    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com/graphql")
+    endpoint = os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + '/graphql'
     headers = {
         'content-type': 'application/json',
         'cache-control': 'no-cache',
@@ -106,30 +113,73 @@ class Session:
         }
         data = json.dumps(data)
         try:
-            with requests_retry_session() as session:
-                response = session.request(
-                    "POST", self.endpoint, data=data, headers=self.headers)
-        except requests.exceptions.Timeout:
-            raise APIException('Occurred Time out of this request')
-        except requests.exceptions.RequestException:
-            raise APIException('Network Error')
-        except Exception:
-            raise APIException('Unknown Error on requests')
+            response = requests.request(
+                "POST", self.endpoint, data=data, headers=self.headers)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 401:
+                raise UnauthorizedException("Unauthorized Exception")
+            elif response.status_code == 403:
+                raise ForbiddenException("Forbidden Exception")
+            raise APIException(f"HTTP Error: {repr(e)}")
+        except requests.exceptions.Timeout as e:
+            raise APIException(f"Request Time Out Exception: {repr(e)}")
+        except requests.exceptions.ConnectionError as e:
+            raise APIException(f"Network Connection Error: {repr(e)}")
+        except Exception as e:
+            raise APIUnknownException(
+                "Unknown Error Exception: Check your API response"
+            )
 
-        try:
-            response = response.json()
-        except:
-            raise APIException(
-                "Failed to parse response as JSON: %s", response.text)
-        errors = response.get('errors', [])
-        if 'message' in response and response.get('message', None) == 'Forbidden':
-            return False
-        elif 'message' in response and response.get('message', None) == 'Limit Exceeded':
-            raise APILimitExceededException()
-        elif 'message' in response:
-            raise APIUnknownException(response.get('message', None))
-        if errors:
-            raise APIException(errors[0]['message'])
+        result = response.json()
+
+        if isinstance(result, dict) and len(result.keys()) == 0:
+            self.history.appendleft({"APIException": data})
+            raise APIException(f"HTTP Error: Empty contents")
+
+        if "error" in result:
+            error = result["error"]
+            if error["message"] == "Forbidden":
+                raise AuthenticateFailedException(
+                    "Authentication Failed Exception : Check your credentials"
+                )
+            elif error["message"] == "Limit Exceeded":
+                raise APILimitExceededException(
+                    "Limit Exceeded Exception : API request limit exceeded"
+                )
+
+        if "errors" in result:
+            errors = result["errors"]
+            for error in errors:
+                if error["extensions"]["code"] == "INTERNAL_SERVER_ERROR":
+                    raise APIUnknownException(
+                        "Unknown Error Exception: Check your API response"
+                    )
+                elif int(error["extensions"]["code"]) == 400:
+                    raise BadRequestException("Bad Request Exception")
+                elif int(error["extensions"]["code"]) == 401:
+                    raise UnauthorizedException("Unauthorized Exception")
+                elif int(error["extensions"]["code"]) == 403:
+                    raise ForbiddenException("Forbidden Exception")
+                elif error["message"] == "Request failed with status code 404" or int(
+                    error["extensions"]["code"] == 404
+                ):
+                    raise NotFoundException(
+                        "Not Found Exception: Open API returns not found exception with status code 404"
+                    )
+                elif int(error["extensions"]["code"]) == 409:
+                    raise ConflictException("Conflict Exception")
+                elif (
+                    error["message"] == "Not Available Server"
+                    or int(error["extensions"]["code"]) == 503
+                ):
+                    raise NotAvailableServerException(
+                        "Not Available Server Exception: Not connected to the server"
+                    )
+                else:
+                    raise APIUnknownException(
+                        "Unknown Error Exception: Check your API response"
+                    )
         if 'data' not in response:
             return False
         return True
@@ -144,29 +194,73 @@ class Session:
         try:
             response = requests.request(
                 "POST", self.endpoint, data=data, headers=self.headers)
-        except requests.exceptions.Timeout:
-            raise APIException('Occurred Time out of this request')
-        except requests.exceptions.RequestException:
-            raise APIException('Network Error')
-        except Exception:
-            raise APIException('Unknown Error on requests')
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 401:
+                raise UnauthorizedException("Unauthorized Exception")
+            elif response.status_code == 403:
+                raise ForbiddenException("Forbidden Exception")
+            raise APIException(f"HTTP Error: {repr(e)}")
+        except requests.exceptions.Timeout as e:
+            raise APIException(f"Request Time Out Exception: {repr(e)}")
+        except requests.exceptions.ConnectionError as e:
+            raise APIException(f"Network Connection Error: {repr(e)}")
+        except Exception as e:
+            raise APIUnknownException(
+                "Unknown Error Exception: Check your API response"
+            )
 
-        try:
-            response = response.json()
-        except:
-            raise APIException(
-                "Failed to parse response as JSON: %s", response.text)
-        errors = response.get('errors', [])
-        # TODO: Error Handling from Server
-        if 'message' in response and response.get('message', None) == 'Forbidden':
-            raise AuthenticateFailedException('Check your credentials')
-        elif 'message' in response and response.get('message', None) == 'Limit Exceeded':
-            raise APILimitExceededException()
-        elif 'message' in response:
-            raise APIUnknownException(response.get('message', None))
-        if errors:
-            raise APIException(errors[0]['message'])
-        return response.get('data')
+        result = response.json()
+
+        if isinstance(result, dict) and len(result.keys()) == 0:
+            self.history.appendleft({"APIException": data})
+            raise APIException(f"HTTP Error: Empty contents")
+
+        if "error" in result:
+            error = result["error"]
+            if error["message"] == "Forbidden":
+                raise AuthenticateFailedException(
+                    "Authentication Failed Exception : Check your credentials"
+                )
+            elif error["message"] == "Limit Exceeded":
+                raise APILimitExceededException(
+                    "Limit Exceeded Exception : API request limit exceeded"
+                )
+
+        if "errors" in result:
+            errors = result["errors"]
+            for error in errors:
+                if error["extensions"]["code"] == "INTERNAL_SERVER_ERROR":
+                    raise APIUnknownException(
+                        "Unknown Error Exception: Check your API response"
+                    )
+                elif int(error["extensions"]["code"]) == 400:
+                    raise BadRequestException("Bad Request Exception")
+                elif int(error["extensions"]["code"]) == 401:
+                    raise UnauthorizedException("Unauthorized Exception")
+                elif int(error["extensions"]["code"]) == 403:
+                    raise ForbiddenException("Forbidden Exception")
+                elif error["message"] == "Request failed with status code 404" or int(
+                    error["extensions"]["code"] == 404
+                ):
+                    raise NotFoundException(
+                        "Not Found Exception: Open API returns not found exception with status code 404"
+                    )
+                elif int(error["extensions"]["code"]) == 409:
+                    raise ConflictException("Conflict Exception")
+                elif (
+                    error["message"] == "Not Available Server"
+                    or int(error["extensions"]["code"]) == 503
+                ):
+                    raise NotAvailableServerException(
+                        "Not Available Server Exception: Not connected to the server"
+                    )
+                else:
+                    raise APIUnknownException(
+                        "Unknown Error Exception: Check your API response"
+                    )
+                    
+        return result.get('data')
 
     def execute_mutation(self, model, query):
         data = self.execute(query)

@@ -9,7 +9,7 @@ class LabelManagerTest(unittest.TestCase):
     def setUp(self):
         pass
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_labels_with_right_params(self, mock_response):
         id = uuid.uuid4()
         project_id = uuid.uuid4()
@@ -37,7 +37,7 @@ class LabelManagerTest(unittest.TestCase):
         self.assertEqual(label.id, id)
         self.assertEqual(label.project_id, project_id)
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_0_labels_with_right_params(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
@@ -55,7 +55,7 @@ class LabelManagerTest(unittest.TestCase):
         self.assertEqual(count, 0)
         self.assertEqual(len(labels), 0)
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_labels_count(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
@@ -65,7 +65,7 @@ class LabelManagerTest(unittest.TestCase):
 
         self.assertEqual(count, 3)
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_get_label_detail_with_right_params(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
@@ -121,7 +121,7 @@ class LabelManagerTest(unittest.TestCase):
         manager = LabelManager()
         manager.get_label(project_id = label.project_id, id = label.id)
 
-    @patch('spb.core.session.requests.post')
+    @patch('requests.sessions.Session.post')
     def test_update_label(self, mock_response):
         response = mock_response.return_value
         response.status_code = 200
@@ -143,7 +143,10 @@ class LabelManagerTest(unittest.TestCase):
                             "count": 1
                         }
                     ],
-                    "workAssignee": "mscha@superb-ai.com",
+                    "workAssignee": "labeler@superb-ai.com",
+                    "reviewer": "reviewer@superb-ai.com",
+                    "reviewRound": 1,
+                    "lastReviewAction": "APPROVE",
                     "labelType": "MAIN_LABEL",
                     "relatedLabelMethod": "",
                     "consensusStatus": "",
@@ -177,12 +180,14 @@ class LabelManagerTest(unittest.TestCase):
                             "value": []
                         }
                     },
-                    "createdBy": "mscha@superb-ai.com",
+                    "createdBy": "owner@superb-ai.com",
                     "createdAt": "2020-04-23T03:14:08.222649Z",
-                    "lastUpdatedBy": "system@superb-ai.com",
+                    "lastUpdatedBy": "admin@superb-ai.com",
                     "lastUpdatedAt": "2021-04-14T06:19:38.486464Z",
-                    "info_read_presigned_url": None,
-                    "info_write_presigned_url": None
+                    "infoLastUpdatedBy": "admin@superb-ai.com",
+                    "lastReviewedAt":"2021-04-14T06:19:38.486464Z",
+                    "infoReadPresignedUrl": None,
+                    "infoWritePresignedUrl": None
                 }
             }
         }

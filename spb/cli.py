@@ -63,7 +63,7 @@ def configure(team_name, access_key, list_flag):
     with open(credential_path, 'w') as f:
         config_parser.write(f)
 
-    console.print(f"Profile [b blue]{profile_name}[/b blue] is configured with team name '{team_name}'.")
+    console.print(f"Profile [b blue]{profile_name}[/b blue] is counfigured with team name '{team_name}'.")
 
 @cli.group()
 def describe():

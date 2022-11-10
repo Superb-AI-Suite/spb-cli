@@ -7,16 +7,24 @@ import rich.table
 import rich.console
 import rich.logging
 import math
-from multiprocessing import Process, Manager, Pool
+from multiprocessing import Manager, Pool
 import tqdm
-import requests
-from collections import ChainMap
 
 import spb
 from spb.cli_core.utils import recursive_glob_video_paths, recursive_glob_label_files
-from spb.models.label import Label
 from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.utils.utils import requests_retry_session
+from spb.exceptions import (
+    APIUnknownException,
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+    UnauthorizedException,
+    ForbiddenException,
+    APILimitExceededException,
+    APIUnknownException,
+    NotAvailableServerException
+)
 
 console = rich.console.Console()
 logger = logging.getLogger()
@@ -96,10 +104,13 @@ class VideoLabelData():
         self._print_error_table(label_results=dict(label_results[0]))
 
     def download(self, project, directory_path, is_forced):
-        command = spb.Command(type='describe_videolabel')
-        _, label_count = spb.run(command=command, option={
-            'project_id' : project.id
-        }, page_size = 1, page = 1)
+        try:
+            command = spb.Command(type='describe_videolabel')
+            _, label_count = spb.run(command=command, option={
+                'project_id' : project.id
+            }, page_size = 1, page = 1)
+        except APIUnknownException as e:
+            console.print("API Unknown Error Exception: Please contact Superb AI Team.")
 
         #Download project configuration
         try:
@@ -140,10 +151,13 @@ class VideoLabelData():
 
         console.print('\n[b blue]** Result Summary **[/b blue]')
         console.print(f'Download of project configuration - {"[b blue]Success[/b blue]" if is_download_project_config else "[b red]Fail[/b red]"}')
-        label_success_count = label_count - len(label_results)
-        console.print(f'Successful download of {label_success_count} out of {label_count} labels. ({round(label_success_count/label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
-        data_success_count = label_count - len(data_results)
-        console.print(f'Successful download of {data_success_count} out of {label_count} data. ({round(data_success_count/label_count*100,2)}%) - [b red]{len(data_results)} ERRORS[/b red]')
+        try:
+            label_success_count = label_count - len(label_results)
+            console.print(f'Successful download of {label_success_count} out of {label_count} labels. ({round(label_success_count/label_count*100,2)}%) - [b red]{len(label_results)} ERRORS[/b red]')
+            data_success_count = label_count - len(data_results)
+            console.print(f'Successful download of {data_success_count} out of {label_count} data. ({round(data_success_count/label_count*100,2)}%) - [b red]{len(data_results)} ERRORS[/b red]')
+        except ZeroDivisionError:
+            console.print(f'There are no labels to download. Please upload your labels.')
 
         self._print_error_table(label_results=label_results, data_results=data_results)
 
@@ -199,6 +213,7 @@ class VideoLabelData():
                 click.echo()
                 if key=='q' or key=='Q':
                     break
+                page += 1
         console.log(f'[b]Check the log file for more details[/b]')
         console.log(f'- {simple_logger.handlers[0].baseFilename}')
         console.log(f'- {logger.handlers[0].baseFilename}')
@@ -268,10 +283,24 @@ def _upload_asset(args):
             data = open(file_path,'rb').read()
             with requests_retry_session() as session:
                 response = session.put(file_info['presigned_url'], data=data)
-            
+    except BadRequestException as e:
+        _set_error_result(asset_video['data_key'], result, "Please check your data size and format.", e)
+    except UnauthorizedException as e:
+        _set_error_result(asset_video['data_key'], result, "Please check your credentials.", e)
+    except ForbiddenException as e:
+        _set_error_result(asset_video['data_key'], result, "Please check your permissions.", e)
+    except NotFoundException as e:
+        _set_error_result(asset_video['data_key'], result, "There is no data matching the data key.", e)
+    except ConflictException as e:
+        _set_error_result(asset_video['data_key'], result, "Duplicate Data. Please check your dataset and data key.", e)
+    except APILimitExceededException as e:
+        _set_error_result(asset_video['data_key'], result, "API rate limit is exceeded.", e)
+    except APIUnknownException as e:
+        _set_error_result(asset_video['data_key'], result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
+    except NotAvailableServerException as e:
+        _set_error_result(asset_video['data_key'], result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
     except Exception as e:
-        _set_error_result(asset_video['data_key'], result, str(e), e)
-        pass
+        _set_error_result(asset_video['data_key'], result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
 
 
 def _update_label(args):
@@ -291,14 +320,26 @@ def _update_label(args):
         described_labels, _ = spb.run(command=command, option=option, page_size=1, page=1)
         described_label = described_labels[0] if described_labels and described_labels[0] else None
         if described_label is None:
-            _set_error_result(data_key, result, 'Label cannot be described.')
+            _set_error_result(data_key, result, 'Label not found. No such data key in the dataset.')
             return
-        if described_label.data_key != option['data_key'] and described_label.dataset != option['dataset']:
-            _set_error_result(data_key, result, 'Described label does not match to upload.')
-            return
+    except BadRequestException as e:
+        _set_error_result(data_key, result, "Please check your data size and format.", e)
+    except UnauthorizedException as e:
+        _set_error_result(data_key, result, "Please check your credentials.", e)
+    except ForbiddenException as e:
+        _set_error_result(data_key, result, "Please check your permissions.", e)
+    except NotFoundException as e:
+        _set_error_result(data_key, result, "There is no data matching the data key.", e)
+    except ConflictException as e:
+        _set_error_result(data_key, result, "Duplicate Data. Please check your dataset and data key.", e)
+    except APILimitExceededException as e:
+        _set_error_result(data_key, result, "API rate limit is exceeded.", e)
+    except APIUnknownException as e:
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
+    except NotAvailableServerException as e:
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
     except Exception as e:
-        _set_error_result(data_key, result, str(e), e)
-        return
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
     
     label = {
         "id": described_label.id,
@@ -312,6 +353,7 @@ def _update_label(args):
             json_data = json.load(json_file)
         # TODO: NEED info.json VALIDATION
         if json_data['result'] is None:
+            _set_error_result(data_key, result, 'Empty label result, passed.')
             return
         
         label_info = build_label_info(label_interface=label_interface, result=json_data['result'])
@@ -326,8 +368,24 @@ def _update_label(args):
         label = spb.run(command=command, option=label, optional={'info': json.dumps(info_json)})
         with open(label_path, 'w') as f:
             f.write(label.toJson())
+    except BadRequestException as e:
+        _set_error_result(data_key, result, "Please check your data size and format.", e)
+    except UnauthorizedException as e:
+        _set_error_result(data_key, result, "Please check your credentials.", e)
+    except ForbiddenException as e:
+        _set_error_result(data_key, result, "Please check your permissions.", e)
+    except NotFoundException as e:
+        _set_error_result(data_key, result, "There is no data matching the data key.", e)
+    except ConflictException as e:
+        _set_error_result(data_key, result, "Duplicate Data. Please check your dataset and data key.", e)
+    except APILimitExceededException as e:
+        _set_error_result(data_key, result, "API rate limit is exceeded.", e)
+    except APIUnknownException as e:
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
+    except NotAvailableServerException as e:
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
     except Exception as e:
-        _set_error_result(data_key, result, str(e), e)
+        _set_error_result(data_key, result, "API Unknown Error Exception: Please contact Superb AI Team.", e)
 
 def _set_error_result(key, result, message, exception=None):
     result[key] = message
