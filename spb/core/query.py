@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List
 
 from spb.core.models.types import Type
-from spb.exceptions import AttributeTypeException, QueryTypeException
+from spb.exceptions import QueryTypeException
 
 logger = logging.getLogger()
 

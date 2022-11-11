@@ -1,8 +1,5 @@
 from urllib.parse import urlencode, unquote
-from spb.core import query
 from spb.core.query import BaseQuery
-from spb.exceptions import QueryTypeException
-from spb.models import data, project
 
 
 class Query(BaseQuery):

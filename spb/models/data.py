@@ -1,14 +1,10 @@
-import json
 import os
 import requests
 import base64
 from spb.datauri import DataURI
-from spb.orm.type_base import Type
 from spb.orm import Model
-from spb.orm import AttributeModel
 from spb.orm.utils import is_data_url, is_url
-from spb.orm.type import String, ID, Number, Object
-from spb.exceptions import ImageDoesNotExistsException
+from spb.orm.type import String, ID, Number
 
 
 class Data(Model):

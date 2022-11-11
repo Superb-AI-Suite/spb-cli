@@ -1,6 +1,5 @@
 import abc
-import json
-from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
+from spb.exceptions import ImmutableValueChangeException
 
 class Type(object):
     type_name = None

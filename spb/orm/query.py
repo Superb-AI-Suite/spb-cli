@@ -1,5 +1,3 @@
-import numbers
-import inspect
 import re
 from .type_base import Type
 

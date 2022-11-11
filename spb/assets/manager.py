@@ -1,7 +1,6 @@
 import uuid
 
 from spb.core.manager import BaseManager
-from spb.exceptions import APIFormatException, APIUnknownException
 from spb.projects.project import Project
 
 from .asset import Asset
@@ -24,15 +23,10 @@ class AssetManager(BaseManager):
             asset.get_property_names(exclude=["project_id", "cursor"])
         )
         self.query.required_attrs.extend(asset.get_property_names(include=["id"]))
-        try:
-            query, values = self.query.build_query()
-            response = self.session.execute(query, values)
-            asset = self.session.get_data_from_response(response)
-            return asset
-        except APIFormatException as e:
-            raise e
-        except Exception as e:
-            raise APIUnknownException(str(e))
+        query, values = self.query.build_query()
+        response = self.session.execute(query, values)
+        asset = self.session.get_data_from_response(response)
+        return asset
 
     def get_assets(self, cursor: bytes = None, page_size: int = 10):
         self.query.query_id = "assetsV2"
@@ -58,35 +52,25 @@ class AssetManager(BaseManager):
             )
         self.query.attrs.update(query_attrs)
 
-        try:
-            if init_cursor:
-                query, values = self.query.build_query(init_cursor=init_cursor)
-            else:
-                query, values = self.query.build_query(cursor=cursor)
-            response = self.session.execute(query, values)
-            (
-                count,
-                prev,
-                nxt,
-                histories,
-            ) = self.session.get_cursor_based_data_from_response(response)
-            return count, prev, nxt, histories
-        except APIFormatException as e:
-            raise e
-        except Exception as e:
-            raise APIUnknownException(str(e))
+        if init_cursor:
+            query, values = self.query.build_query(init_cursor=init_cursor)
+        else:
+            query, values = self.query.build_query(cursor=cursor)
+        response = self.session.execute(query, values)
+        (
+            count,
+            prev,
+            nxt,
+            histories,
+        ) = self.session.get_cursor_based_data_from_response(response)
+        return count, prev, nxt, histories
 
     def get_download_url(self, asset: Asset):
-        try:
-            query = f"query ($id:String!) {{getAssetUrl(id: $id){{presignedURL}}}}"
-            values = {"id": str(asset.id)}
-            response = self.session.execute(query, values)
-            url = self.session.get_url_from_response(response)
-            return url
-        except APIFormatException as e:
-            raise e
-        except Exception as e:
-            raise APIUnknownException(str(e))
+        query = f"query ($id:String!) {{getAssetUrl(id: $id){{presignedURL}}}}"
+        values = {"id": str(asset.id)}
+        response = self.session.execute(query, values)
+        url = self.session.get_url_from_response(response)
+        return url
 
     def assign_asset(self, asset: Asset, project: Project):
         self.query.query_id = "assignAsset"
@@ -109,10 +93,7 @@ class AssetManager(BaseManager):
             )
         )
 
-        try:
-            query, values = self.query.build_mutation_query()
-            response = self.session.execute(query, values)
-            result = self.session.get_assign_result_from_response(response)
-            return result
-        except Exception as e:
-            raise e
+        query, values = self.query.build_mutation_query()
+        response = self.session.execute(query, values)
+        result = self.session.get_assign_result_from_response(response)
+        return result

@@ -1,6 +1,3 @@
-import json
-
-from spb.orm.type_base import Type
 from spb.orm import Model
 from spb.orm import AttributeModel
 from spb.orm.type import String, ID, Number, Object

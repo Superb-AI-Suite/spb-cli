@@ -1,8 +1,6 @@
-import json
 import uuid
 
 from spb.core import Model
-from spb.core.models.attrs import AttributeModel
 from spb.core.models.types import ID, Int, JsonList, JsonObject, String
 
 

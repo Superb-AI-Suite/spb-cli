@@ -1,12 +1,10 @@
 import base64
 import configparser
-import copy
 import json
 import os
 
 import requests
 
-from spb.command import Command
 from spb.exceptions import (APIException, APILimitExceededException,
                             APIUnknownException, AuthenticateFailedException,
                             BadRequestException, ConflictException,
@@ -192,8 +190,9 @@ class Session:
         }
         data = json.dumps(data)
         try:
-            response = requests.request(
-                "POST", self.endpoint, data=data, headers=self.headers)
+            with requests_retry_session() as session:
+                response = session.request(
+                    "POST", self.endpoint, data=data, headers=self.headers)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if response.status_code == 401:

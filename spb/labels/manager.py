@@ -4,9 +4,8 @@ import uuid
 
 import requests
 from spb.core.manager import BaseManager
-from spb.exceptions import APIException, ParameterException
+from spb.exceptions import APIException
 from spb.labels.serializer import LabelInfoBuildParams
-from spb.libs.phy_credit.phy_credit.imageV2 import LabelInfo
 from spb.utils.utils import requests_retry_session
 
 from .label import Label, WorkappType

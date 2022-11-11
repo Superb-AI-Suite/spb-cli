@@ -1,7 +1,7 @@
 import os
 import json
 from spb.orm import Model
-from spb.orm.type import String, ID, List
+from spb.orm.type import String, ID
 
 
 class VideoData(Model):

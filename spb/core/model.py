@@ -1,13 +1,7 @@
-import copy
-import json
-import operator
-
 from spb.core.models.attrs import AttributeContainer
 from spb.core.models.types import Type
 from spb.exceptions import (
-    AttributeNameException,
     DoesNotExistsAttribute,
-    ModelInitiationFailedException,
 )
 from spb.orm.utils import attrs
 

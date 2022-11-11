@@ -1,7 +1,6 @@
 import abc
 
-from spb.core.models.attrs import AttributeModel
-from spb.exceptions import ImmutableValueChangeException, TypeInitiationFailedException, NotImplementedException
+from spb.exceptions import  TypeInitiationFailedException, NotImplementedException
 
 
 class Type(object):

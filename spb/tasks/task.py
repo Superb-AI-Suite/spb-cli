@@ -1,16 +1,12 @@
-from email.policy import default
 import uuid
-import json
 
 
 from spb.core import Model
-from spb.core.models.attrs import AttributeModel
 from spb.core.models.types import (
     JsonObject,
     String,
     ID,
     Int,
-    JsonList,
 )
 
 class Task(Model):

@@ -1,5 +1,4 @@
 import os
-import json
 
 from spb.core.session import BaseSession
 from spb.exceptions import APIFormatException

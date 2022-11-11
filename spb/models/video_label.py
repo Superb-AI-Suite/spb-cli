@@ -1,11 +1,7 @@
 import json
-import requests
-from spb.orm.type_base import Type
-from spb.orm.json_type import JsonObject
 from spb.orm import Model
-from spb.orm import AttributeModel
 from spb.orm import ListAttribute
-from spb.orm.type import String, ID, Number, Object, List
+from spb.orm.type import String, ID, Number, Object
 from spb.utils.utils import requests_retry_session
 
 class Stats(ListAttribute):

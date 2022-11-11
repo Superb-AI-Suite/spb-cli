@@ -1,4 +1,3 @@
-import abc
 import json
 from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
 from .type_base import Type

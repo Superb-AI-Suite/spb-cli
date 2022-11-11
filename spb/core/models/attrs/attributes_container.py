@@ -1,11 +1,8 @@
-import abc
 import json
-from uuid import UUID
 
 from copy import deepcopy
 
-from spb.exceptions import ImmutableValueChangeException, AttributeTypeException, ModelInitiationFailedException
-from spb.orm.utils import is_json
+from spb.exceptions import ModelInitiationFailedException
 
 
 class AttributeEncoder(json.JSONEncoder):

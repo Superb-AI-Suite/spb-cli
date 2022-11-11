@@ -28,10 +28,9 @@ boto3 = "*"
 scikit-image = "*"
 semver = "*"
 importlib-metadata = "==3.6"
+jupyter = "*"
 urllib3 = "==1.25.9"
 natsort = "*"
-opencv-python = "*"
-simplejson = "*"
 
 [requires]
 python_version = "3.7"

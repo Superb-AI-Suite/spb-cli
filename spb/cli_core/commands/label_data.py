@@ -176,7 +176,6 @@ class LabelData():
             for key in data_error_results:
                 results[key] = {}
                 results[key]['data'] = data_error_results[key]
-                print(data_error_results[key])
                 results[key]['label'] = None
         if isinstance(label_error_results, dict):
             for key in label_error_results:
