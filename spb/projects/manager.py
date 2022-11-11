@@ -1,4 +1,3 @@
-import json
 import math
 from typing import Optional
 
@@ -6,7 +5,6 @@ import rich
 import rich.console
 import rich.table
 from spb.core.manager import BaseManager
-from spb.exceptions import APIFormatException, APIUnknownException
 
 from .project import Project
 from .query import Query

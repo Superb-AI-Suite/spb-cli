@@ -1,5 +1,4 @@
 import os
-import configparser
 import rich
 import rich.table
 import rich.console

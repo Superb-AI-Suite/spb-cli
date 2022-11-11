@@ -1,4 +1,3 @@
-import copy
 import json
 from spb.orm.manager import Manager
 from spb.orm.type_base import Type

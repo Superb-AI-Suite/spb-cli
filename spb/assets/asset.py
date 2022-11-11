@@ -1,8 +1,7 @@
 import uuid
-from email.policy import default
 
 from spb.core import Model
-from spb.core.models.types import ID, Bytes, JsonList, ModelObject, String
+from spb.core.models.types import ID, Bytes, ModelObject, String
 from spb.projects.project import Project
 
 

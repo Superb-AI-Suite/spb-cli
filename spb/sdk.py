@@ -42,7 +42,6 @@ from spb.exceptions import (
     NotFoundException,
 )
 from spb.exports.manager import ExportManager
-from spb.labels import Label
 from spb.labels.label import Tags, WorkappType
 from spb.labels.manager import LabelManager
 from spb.labels.serializer import LabelInfoBuildParams
@@ -396,17 +395,17 @@ class Client(object):
         export = manager.get_export(project_id=self._project.id, id=id, name=name)
         return export
 
-    def get_masks_by_export(self, id: uuid.UUID = None, name: str = None):
-        if self._project is None:
-            raise ParameterException(f"[ERROR] Project ID does not exist.")
-        if id is None and name is None:
-            raise ParameterException(f"[ERROR] id or name is required.")
+    # def get_masks_by_export(self, id: uuid.UUID = None, name: str = None):
+    #     if self._project is None:
+    #         raise ParameterException(f"[ERROR] Project ID does not exist.")
+    #     if id is None and name is None:
+    #         raise ParameterException(f"[ERROR] id or name is required.")
 
-        manager = ExportManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        masks = manager.get_masks(project_id=self._project.id, id=id, name=name)
-        return masks
+    #     manager = ExportManager(
+    #         self.credential["team_name"], self.credential["access_key"]
+    #     )
+    #     masks = manager.get_masks(project_id=self._project.id, id=id, name=name)
+    #     return masks
 
     def get_task_list(self, status_in, page: int = 1, page_size: int = 10):
         if page < 1:

@@ -6,7 +6,6 @@ import rich.console
 import os
 
 import spb
-from spb.session import Session
 
 helper = None
 console = rich.console.Console()

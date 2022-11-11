@@ -1,4 +1,3 @@
-import abc
 import json
 from uuid import UUID
 from spb.exceptions import ImmutableValueChangeException, AttributeTypeException
