@@ -34,6 +34,9 @@ class Project(Model):
         }
         return project
 
+    def get_project_type(self):
+        return self.workapp.split("-")[0]
+
     def get_stats(self):
         _stats = {
             "in_progress": {
