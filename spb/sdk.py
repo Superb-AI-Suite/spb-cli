@@ -86,11 +86,23 @@ class Client(object):
     # Immutable variables
     ##############################
 
+    def get_project_id(self):
+        if self._project is None:
+            print("[WARNING] Project is not described")
+            return None
+        return self._project.id
+
     def get_project_name(self):
         if self._project is None:
             print("[WARNING] Project is not described")
             return None
         return self._project.name
+
+    def get_project_type(self):
+        if self._project is None:
+            print("[WARNING] Project is not described")
+            return None
+        return self._project.get_project_type()
 
     ##############################
     # Constructor
@@ -281,12 +293,7 @@ class Client(object):
         ext = path.split(".")[-1]
         temp_path = "{:032x}.{}".format(random.getrandbits(128), ext)
 
-        try:
-            self._s3.download_file(bucket_name, path, temp_path)
-        except Exception as e:
-            raise CustomBaseException(
-                "[ERROR] Cannot access S3 path. Check your access permission."
-            )
+        self._s3.download_file(bucket_name, path, temp_path)
 
         result = self.upload_image(temp_path, dataset_name, key, name=name)
 
@@ -458,8 +465,12 @@ class Client(object):
         while True:
             time.sleep(5)
             task_progress = manager.get_task_progress_by_id(task_id=task_id)
+            progress_percentage = 0
+            if task_progress.progress > 0:
+                progress_percentage = (task_progress.total_count / task_progress.progress) * 100
+            print("Progress Percentage: {}".format(progress_percentage))
             if task_progress.status == "FINISHED":
-                print(f"Task Completed")
+                print("Task Completed")
                 break
             elif task_progress.status == "FAILED":
                 print("Task Failed")
@@ -685,6 +696,9 @@ class DataHandle(object):
     def data(self):
         return self._data
 
+    def get_id(self):
+        return self._data.id
+
     def get_key(self):
         return self._data.data_key
 
@@ -693,6 +707,9 @@ class DataHandle(object):
 
     def get_status(self):
         return self._data.status
+
+    def get_last_review_action(self):
+        return self._data.last_review_action
 
     def get_image_url(self):
         if self._is_expired_image_url():
@@ -834,6 +851,8 @@ class DataHandle(object):
         )
         if build_params is not None:
             self._init_label_build_info()
+        
+        return True
 
     def set_tags(self, tags: list = None):
         label_tags = []
@@ -852,6 +871,7 @@ class VideoDataHandle(object):
         self.credential = credential
         self._data = data
         self._project = project
+        self._info = None
         self._created = time.time()
 
     def _is_expired_video_url(self):
@@ -877,6 +897,13 @@ class VideoDataHandle(object):
     # Immutable variables
     ##############################
 
+    @property
+    def data(self):
+        return self._data
+
+    def get_id(self):
+        return self._data.id
+
     def get_key(self):
         return self._data.data_key
 
@@ -886,14 +913,19 @@ class VideoDataHandle(object):
     def get_status(self):
         return self._data.status
 
+    def get_last_review_action(self):
+        return self._data.last_review_action
+
     def get_frame_url(self, idx, data_url=None):
         if self._is_expired_video_url():
             return None
 
         if data_url is None:
             data_url = json.loads(self._data.data_url)
-        file_info = data_url["file_infos"][idx]
-        return f"{data_url['base_url']}{file_info['file_name']}?{data_url['query']}"
+
+        file_ext = data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
+        file_name = f"image_{(idx+1):08}.{file_ext}"
+        return f"{data_url['base_url']}{file_name}?{data_url['query']}"
 
     def get_frame_urls(self):
         if self._is_expired_video_url():
@@ -927,6 +959,8 @@ class VideoDataHandle(object):
             urllib.request.urlretrieve(
                 url, os.path.join(download_to, file_info["file_name"])
             )
+
+        return True
 
     def get_frame(self, idx):
         if self._is_expired_video_url():
@@ -962,12 +996,7 @@ class VideoDataHandle(object):
         for label in labels:
             label_info.add_object(**label)
         info = label_info.build_info()
-
-        self._upload_to_suite(info={"tags": info["tags"]})
-        with requests_retry_session() as session:
-            write_response = session.put(
-                self._data.info_write_presigned_url, data=json.dumps(info)
-            )
+        self._info = info
 
     def get_object_labels(self):
         result = self._get_result()
@@ -986,12 +1015,7 @@ class VideoDataHandle(object):
 
         label_info.set_categories(**label)
         info = label_info.build_info()
-
-        self._upload_to_suite(info={"tags": info["tags"]})
-        with requests_retry_session() as session:
-            write_response = session.put(
-                self._data.info_write_presigned_url, data=json.dumps(info)
-            )
+        self._info = info
 
     def get_category_labels(self):
         result = self._get_result()
@@ -1000,5 +1024,16 @@ class VideoDataHandle(object):
         label_info = build_label_info(self._project.label_interface, result=result)
         return label_info.get_categories()
 
+    def update_data(self):
+        self._upload_to_suite(info={"tags": self._info["tags"]})
+        with requests_retry_session() as session:
+            write_response = session.put(
+                self._data.info_write_presigned_url, data=json.dumps(self._info)
+            )
+        return True
+
     def get_tags(self):
         return [tag.name for tag in self._data.tags]
+
+    def set_tags(self, tags: list = None):
+        raise NotSupportedException("[ERROR] Video does not supported.")
