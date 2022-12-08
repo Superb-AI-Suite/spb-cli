@@ -42,7 +42,7 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=[
         "bleach==3.1.5",
-        "certifi==2020.4.5.2",
+        "certifi==2022.12.7",
         "chardet>=3.0.2,<3.1.0",
         "click==7.1.2",
         "colorama==0.4.3",
