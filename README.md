@@ -81,7 +81,7 @@ $ spb describe projects
 ...
 Press any button to continue to the next page (1/10). Otherwise press ‘Q’ to quit.
 
-$ spb describe project --show reviews
+$ spb describe projects --show reviews
 
 ┏━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃ NAME        ┃ DATA_TYPE ┃ LABELS ┃IN PROGRESS    ┃IN PROGRESS    ┃SUBMITTED      ┃SUBMITTED      ┃SKIPEED       ┃SKIPEED       ┃
