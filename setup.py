@@ -44,7 +44,7 @@ setup(
         "bleach==3.1.5",
         "certifi==2020.4.5.2",
         "chardet>=3.0.2,<3.1.0",
-        "click==7.1.2",
+        "click>=7.1.2",
         "colorama==0.4.3",
         "commonmark==0.9.1",
         "docutils<0.16,>=0.10",
