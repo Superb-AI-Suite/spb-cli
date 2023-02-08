@@ -1,8 +1,14 @@
 import uuid
 
 from spb.core import Model
-from spb.core.models.types import (ID, Boolean, Int, JsonList, JsonObject,
-                                   String)
+from spb.core.models.types import (
+    ID,
+    Boolean,
+    Int,
+    JsonList,
+    JsonObject,
+    String,
+)
 
 
 class Project(Model):
@@ -11,6 +17,7 @@ class Project(Model):
     label_interface = JsonObject(property_name="labelInterface")
     workapp = String(property_name="workapp")
     settings = JsonObject(property_name="settings", default={})
+    label_count = Int(property_name="labelCount")
     is_public = Boolean(property_name="isPublic")
     created_at = String(property_name="createdAt")
     created_by = String(property_name="createdBy")
@@ -34,6 +41,7 @@ class Project(Model):
             "label_interface": self.label_interface,
             "workapp": self.workapp,
             "settings": self.settings,
+            "label_count": self.label_count,
             "is_public": self.is_public,
             "created_at": self.created_at,
             "created_by": self.created_by,
