@@ -113,6 +113,7 @@ class APIFormatException(APIException):
     def __init__(self, message, code="002400"):
         super().__init__(message, code)
 
+
 class UnauthorizedException(APIException):
     def __init__(self, message, code="002401"):
         super().__init__(message, code)
@@ -137,6 +138,11 @@ class NotFoundException(APIException):
 
 class ConflictException(APIException):
     def __init__(self, message, code="002409"):
+        super().__init__(message, code)
+
+
+class PreConditionException(APIException):
+    def __init__(self, message, code="002428"):
         super().__init__(message, code)
 
 

@@ -1,10 +1,9 @@
-import math
-from typing import Optional
+import uuid
+from typing import List, Optional
 
-import rich
-import rich.console
-import rich.table
 from spb.core.manager import BaseManager
+from spb.exceptions import PreConditionException
+from spb.libs.phy_credit.phy_credit.imageV2.project_info import ProjectInfo
 
 from .project import Project
 from .query import Query
@@ -13,115 +12,164 @@ from .session import Session
 
 class ProjectManager(BaseManager):
     PROJECT_LIST_QUERY_ID = "projects"
+    PROJECT_QUERY_ID = "project"
 
     def __init__(self, team_name=None, access_key=None):
         self.session = Session(team_name=team_name, access_key=access_key)
         self.query = Query()
 
-    def create_project(self, project_info) -> Optional[Project]:
+    def create_project(
+        self,
+        name: str,
+        label_interface: dict,
+        description: str = "",
+        is_public: bool = False,
+        allow_advanced_qa: bool = False,
+    ) -> Optional[Project]:
         query_id = "createProject"
-        query = f"mutation ($projectInfo:JSONObject!) {{{query_id}(projectInfo: $projectInfo)}}"
+        self.query.query_id = query_id
+        project_info = {
+            "name": name,
+            "description": description,
+            "label_interface": label_interface,
+            "is_public": is_public,
+            "settings": {
+                "allow_advanced_qa": allow_advanced_qa,
+            },
+        }
+        if "workapp" not in project_info:
+            project_info["workapp"] = label_interface["type"]
+
+        project = Project()
+        response_attrs = "\n".join(project.get_property_names())
+        query = f"mutation ($projectInfo:JSONObject!) {{{query_id}(projectInfo: $projectInfo) {{{response_attrs}}}}}"
         values = {"projectInfo": project_info}
         response = self.session.execute(query, values)
-
-        return self.session.get_result_from_create_project(response, query_id)
-
-    def describe_project(
-        self, page: int = 1, page_size: int = 10, show_options: str = "default"
-    ):
-
-        supported_options = ["default", "reviews"]
-        assert show_options in supported_options
-
-        _, projects = self.get_project_list(page=page, page_size=page_size)
-        console = rich.console.Console()
-        table = rich.table.Table(show_header=True, header_style="bold magenta")
-        table.add_column("NAME", width=50)
-        table.add_column("LABELS", justify="right")
-        if show_options == 'default':
-            self.print_default_option_projects(projects=projects, table=table)
-        elif show_options == 'reviews':
-            self.print_review_option_projects(projects=projects, table=table)
-        console.print(table)
-
-    def print_default_option_projects(self, projects, table):
-        table.add_column("IN PROGRESS", justify="right")
-        table.add_column("SUBMITTED", justify="right")
-        table.add_column("SKIPPED", justify="right")
-
-        for project in projects:
-            in_progress_ratio = math.ceil( project.in_progress_label_count / project.label_count * 100 ) if project.label_count > 0 else 0
-            skipped_ratio = math.ceil( project.skipped_label_count / project.label_count * 100 ) if project.label_count > 0 else 0
-            table.add_row(
-                project.name,
-                f"{project.label_count}",
-                f"{project.in_progress_label_count} ({in_progress_ratio} %)",
-                f"{project.submitted_label_count} ({project.progress} %)",
-                f"{project.skipped_label_count} ({skipped_ratio} %)"
-            )
-
-    def print_review_option_projects(self, projects, table):
-        table.add_column("IN PROGRESS\nRejected")
-        table.add_column("IN PROGRESS\nNot Submitted")
-        table.add_column("SUBMITTED\nApproved")
-        table.add_column("SUBMITTED\nPending Review")
-        table.add_column("SKIPPED\nApproved")
-        table.add_column("SKIPPED\nPending Review")
-
-        for project in projects:
-            stats = project.stats if project.stats is not None else []
-
-            in_progress_count = ([item for item in stats if item['type'] == 'IN_PROGRESS_COUNT'][0:1] or [{}])[0].get('info', {})
-            submitted_count = ([item for item in stats if item['type'] == 'SUBMITTED_COUNT'][0:1] or [{}])[0].get('info', {})
-            skipped_count = ([item for item in stats if item['type'] == 'SKIPPED_COUNT'][0:1] or [{}])[0].get('info', {})
-
-            table.add_row(
-                project.name,
-                f'{project.label_count}',
-                f'{in_progress_count.get("rejected", 0)}',
-                f'{in_progress_count.get("not_submitted", 0)}',
-                f'{submitted_count.get("approved", 0)}',
-                f'{submitted_count.get("pending_review", 0)}',
-                f'{skipped_count.get("approved", 0)}',
-                f'{skipped_count.get("pending_review", 0)}'
-            )
-
-    def get_project_list(self, page: int = 1, page_size: int = 10):
-        query, _ = self._get_project_list_query(
-            name=None, page=page, page_size=page_size
+        return self.session.get_result_from_response_project(
+            response, query_id
         )
 
-        response = self.session.execute(query, None)
-        return self.session.extract_project_list(response, self.PROJECT_LIST_QUERY_ID)
+    def update_project(
+        self,
+        id: uuid.UUID,
+        new_name: str = None,
+        label_interface: dict = None,
+        description: str = None,
+        is_public: bool = None,
+        allow_advanced_qa: bool = None,
+    ):
+        existing_project = self.get_project_by_id(id=id)
 
-    def get_project_by_name(self, name: str) -> Optional[Project]:
-        query, value = self._get_project_list_query(name=name, page=1, page_size=1)
+        query_id = "updateProject"
+        self.query.query_id = query_id
+        project_info = dict()
+        if new_name is not None:
+            project_info.update({"name": new_name})
+        if description is not None:
+            project_info.update({"description": description})
+        if label_interface is not None:
+            project_info.update({"label_interface": label_interface})
+            if (
+                existing_project.label_interface["type"]
+                != label_interface["type"]
+            ):
+                raise PreConditionException(
+                    "[ERROR] Workapp type cannot be changed"
+                )
+        if is_public is not None:
+            project_info.update({"is_public": is_public})
+        if allow_advanced_qa is not None:
+            project_info.update(
+                {
+                    "settings": {
+                        "allow_advanced_qa": allow_advanced_qa,
+                    }
+                }
+            )
 
-        response = self.session.execute(query, value)
-        try:
-            project = self.session.extract_project(response, self.PROJECT_LIST_QUERY_ID)
-        except:
-            project = None
-        return project
+        project = Project(id=id)
+        id = project.to_json()["id"]
+        response_attr = "\n".join(project.get_property_names())
+        query = f"mutation ($id: String!, $projectInfo: JSONObject!) {{{query_id}(id: $id, projectInfo: $projectInfo) {{{response_attr}}}}}"
+        values = {"id": id, "projectInfo": project_info}
+        response = self.session.execute(query, values)
+        return self.session.get_result_from_response_project(
+            response, query_id
+        )
 
-    def get_project_by_id(self, id: str):
-        query, value = self._get_project_list_query()
-
-    def _get_project_list_query(
-        self, name: str = None, page: int = 1, page_size: int = 10
+    def get_project_list(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        name_icontains: str = None,
+        data_type: str = None,
+        annotation_type: List[str] = None,
     ):
         self.query.query_id = self.PROJECT_LIST_QUERY_ID
 
-        project = Project(name=name)
+        project = Project()
 
-        if project.name is not None:
-            query_attrs = project.get_attributes_map(include=["name"])
-            self.query.attrs.update(query_attrs)
-
+        self.query.name_icontains = name_icontains
+        self.query.data_type = data_type
+        self.query.annotation_type = annotation_type
         self.query.page = page
         self.query.page_size = page_size
 
         self.query.response_attrs.extend(project.get_property_names())
 
+        query, _ = self.query.build_query()
+
+        response = self.session.execute(query, None)
+        return self.session.extract_project_list(
+            response, self.PROJECT_LIST_QUERY_ID
+        )
+
+    def get_project_by_name(self, name: str) -> Optional[Project]:
+        self.query.query_id = self.PROJECT_QUERY_ID
+
+        project = Project(name=name)
+
+        query_attrs = project.get_attributes_map(include=["name"])
+        self.query.attrs.update(query_attrs)
+
+        self.query.response_attrs.extend(project.get_property_names())
+
         query, value = self.query.build_query()
-        return query, value
+
+        response = self.session.execute(query, value)
+        project = self.session.extract_project(response, self.PROJECT_QUERY_ID)
+
+        return project
+
+    def get_project_by_id(self, id: uuid.UUID):
+        self.query.query_id = self.PROJECT_QUERY_ID
+
+        project = Project(id=id)
+
+        query_attrs = project.get_attributes_map(include=["id"])
+        self.query.attrs.update(query_attrs)
+
+        self.query.response_attrs.extend(project.get_property_names())
+
+        query, value = self.query.build_query()
+
+        response = self.session.execute(query, value)
+        project = self.session.extract_project(response, self.PROJECT_QUERY_ID)
+
+        return project
+
+    def delete_project(self, id: uuid.UUID):
+        query_id = "deleteProject"
+        self.query.query_id = query_id
+        project = Project(id=id)
+        query_attrs = project.get_attributes_map(include=["id"])
+        self.query.attrs.update(query_attrs)
+        self.query.required_attrs.extend(
+            project.get_property_names(include=["id"])
+        )
+
+        query, values = self.query.build_mutation_query()
+
+        response = self.session.execute(query, values)
+
+        return self.session.get_result_from_response(response, query_id)

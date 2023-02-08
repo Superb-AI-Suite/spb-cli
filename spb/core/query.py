@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from spb.core.models.types import Type
 from spb.exceptions import QueryTypeException
@@ -27,7 +27,11 @@ class BaseQuery(object):
         page_size: int = None,
     ) -> str:
         self._set_variables(
-            query_id = query_id, attrs = attrs, response_attrs = response_attrs, page = page, page_size = page_size
+            query_id=query_id,
+            attrs=attrs,
+            response_attrs=response_attrs,
+            page=page,
+            page_size=page_size,
         )
         where_message, values = self._make_where_message()
         type_expressions = self._make_attribute_type_expressions()
@@ -50,7 +54,11 @@ class BaseQuery(object):
         page_size: int = None,
     ) -> str:
         self._set_variables(
-            query_id = query_id, attrs = attrs, response_attrs = response_attrs, cursor = cursor, page_size = page_size
+            query_id=query_id,
+            attrs=attrs,
+            response_attrs=response_attrs,
+            cursor=cursor,
+            page_size=page_size,
         )
         where_message, values = self._make_cursor_where_message()
         type_expressions = self._make_attribute_type_expressions()
@@ -98,9 +106,13 @@ class BaseQuery(object):
             )
             type_expressions.append(f"${type_instance.attr}:{value}")
 
-        return f'({",".join(type_expressions)})' if len(type_expressions) > 0 else ""
+        return (
+            f'({",".join(type_expressions)})'
+            if len(type_expressions) > 0
+            else ""
+        )
 
-    def _make_where_message(self) -> (str, dict):
+    def _make_where_message(self) -> Tuple[str, dict]:
         params = []
         values = {}
         for attr_type, value in self.attrs.items():
@@ -114,7 +126,7 @@ class BaseQuery(object):
 
         return f'({",".join(params)})' if len(params) > 0 else "", values
 
-    def _make_cursor_where_message(self) -> (str, dict):
+    def _make_cursor_where_message(self) -> Tuple[str, dict]:
         params = []
         values = {}
         for attr_type, value in self.attrs.items():
@@ -123,20 +135,24 @@ class BaseQuery(object):
             params.append(query)
         if self.cursor is not None:
             params.append(f"cursor:$cursor,pageSize:$pageSize")
-            values.update({
-                "cursor": self.cursor,
-                "pageSize": 10,
-            })
+            values.update(
+                {
+                    "cursor": self.cursor,
+                    "pageSize": 10,
+                }
+            )
         if self.page_size is not None:
             params.append(f"pageSize:$pageSize")
             values.update({"pageSize": self.page_size})
 
         return f'({",".join(params)})' if len(params) > 0 else "", values
 
-    def _make_cursor_body_message(self)-> str:
+    def _make_cursor_body_message(self) -> str:
         try:
             if self.page_size is not None:
-                return "{count, next, previous, edges{%s}}" % " ".join(self.response_attrs)
+                return "{count, next, previous, edges{%s}}" % " ".join(
+                    self.response_attrs
+                )
             elif self.response_attrs == []:
                 return ""
             else:
