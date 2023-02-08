@@ -8,7 +8,8 @@ from .project import Project
 
 class Session(BaseSession):
     endpoint = (
-        os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + "/v2/graphql"
+        os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com")
+        + "/v3/graphql"
     )
 
     def extract_project_list(self, response, query_id):
@@ -26,14 +27,20 @@ class Session(BaseSession):
         response_json = response.json()
         self._check_errors(response_json)
 
-        data = response_json["data"][query_id]["edges"][0]
+        data = response_json["data"][query_id]
         return Project(**data)
 
-    def get_result_from_create_project(self, response, query_id):
+    def get_result_from_response_project(self, response, query_id):
         response_json = response.json()
         self._check_errors(response_json)
         data = response_json["data"][query_id]
-        return Project(**data) # TODO check response
+        return Project(**data)  # TODO check response
+
+    def get_result_from_response(self, response, query_id):
+        response_json = response.json()
+        self._check_errors(response_json)
+        data = response_json["data"][query_id]
+        return data
 
     def _check_errors(self, response_json):
         if "errors" in response_json:

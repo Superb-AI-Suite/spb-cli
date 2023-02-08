@@ -28,24 +28,26 @@ import random
 import time
 import urllib
 import uuid
+from typing import List
 
 import boto3
 import skimage.io
-
+import spb
 from natsort import natsorted
 
-import spb
+# from spb.assets.asset import Asset
+# from spb.assets.manager import AssetManager
 from spb.exceptions import (
     CustomBaseException,
+    NotFoundException,
     NotSupportedException,
     ParameterException,
-    NotFoundException,
+    PreConditionException,
 )
 from spb.exports.manager import ExportManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.manager import LabelManager
 from spb.labels.serializer import LabelInfoBuildParams
-from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.projects import Project
 from spb.projects.manager import ProjectManager
 from spb.tasks.manager import TaskManager
@@ -66,8 +68,9 @@ class Client(object):
         super().__init__()
 
         if team_name is not None and access_key is not None:
-            print(f"[INFO] Usage: Client has been started with {team_name}")
-            spb.setup_default_session(team_name=team_name, access_key=access_key)
+            spb.setup_default_session(
+                team_name=team_name, access_key=access_key
+            )
             self.credential = {
                 "team_name": team_name,
                 "access_key": access_key,
@@ -76,10 +79,9 @@ class Client(object):
             self.credential = {"team_name": None, "access_key": None}
 
         if project_name is None:
-            # print("[WARNING] Client cannot be used to describe label without project")
             self._project = None
         else:
-            self._project = self.get_project(project_name)
+            self._project = self.get_project(name=project_name)
         self._s3 = boto3.client("s3")
 
     ##############################
@@ -88,19 +90,19 @@ class Client(object):
 
     def get_project_id(self):
         if self._project is None:
-            print("[WARNING] Project is not described")
+            print("[WARNING] Project is not described.")
             return None
         return self._project.id
 
     def get_project_name(self):
         if self._project is None:
-            print("[WARNING] Project is not described")
+            print("[WARNING] Project is not described.")
             return None
         return self._project.name
 
     def get_project_type(self):
         if self._project is None:
-            print("[WARNING] Project is not described")
+            print("[WARNING] Project is not described.")
             return None
         return self._project.get_project_type()
 
@@ -108,53 +110,135 @@ class Client(object):
     # Constructor
     ##############################
 
-    # def create_project(self, project_info):
-    #     manager = ProjectManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     return manager.create_project(project_info)
-
-    def get_project(self, project_name: str = None, project_id: str = None):
+    def create_project(
+        self,
+        name: str,
+        label_interface: dict,
+        description: str = "",
+        is_public: bool = False,
+        allow_advanced_qa: bool = False,
+    ):
         manager = ProjectManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        if project_name:
-            project = manager.get_project_by_name(name=project_name)
-        elif project_id:
-            project = manager.get_project_by_id(id=project_id)
+        project = manager.create_project(
+            name=name,
+            label_interface=label_interface,
+            description=description,
+            is_public=is_public,
+            allow_advanced_qa=allow_advanced_qa,
+        )
+        if project:
+            self._project = project
+            print(f"[INFO] create project success: {self._project.name}.")
+
+    def update_project(
+        self,
+        id: uuid.UUID,
+        new_name: str = None,
+        label_interface: dict = None,
+        description: str = None,
+        is_public: bool = None,
+        allow_advanced_qa: bool = None,
+    ):
+        manager = ProjectManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        if not (id or new_name or label_interface or description or is_public):
+            raise ParameterException(
+                "[ERROR] More than one paramter should be described."
+            )
+        project = manager.update_project(
+            id=id,
+            new_name=new_name,
+            label_interface=label_interface,
+            description=description,
+            is_public=is_public,
+            allow_advanced_qa=allow_advanced_qa,
+        )
+
+        if project:
+            self._project = project
+            print(f"[INFO] Update project success: {self._project.name}.")
+
+    def get_project(self, name: str = None, id: uuid.UUID = None):
+        manager = ProjectManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        if id:
+            project = manager.get_project_by_id(id=id)
+        elif name:
+            project = manager.get_project_by_name(name=name)
         else:
-            raise ParameterException(f"[ERROR] Project name or id should be described")
-
-        if project is None:
-            raise NotFoundException("[ERROR] Project {} not found".format(project_name))
-
+            raise ParameterException(
+                f"[ERROR] Project name or id should be described."
+            )
         return project
 
-    def get_projects(self, page: int = 1, page_size: int = 10):
+    def get_projects(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        name_icontains: str = None,
+        data_type: str = None,
+        annotation_type: List[str] = None,
+    ):
         manager = ProjectManager(
             self.credential["team_name"], self.credential["access_key"]
         )
         if page < 1:
             raise ParameterException(
-                f"[ERROR] page: index out of bound, must be in [1, inf]"
+                f"[ERROR] page: index out of bound, must be in [1, inf]."
             )
-        count, projects = manager.get_project_list(page=page, page_size=page_size)
+        count, projects = manager.get_project_list(
+            page=page,
+            page_size=page_size,
+            name_icontains=name_icontains,
+            data_type=data_type,
+            annotation_type=annotation_type,
+        )
         return (count, projects)
 
-    def set_project(self, project: Project):
-        self._project = project
+    def set_project(
+        self, project: Project = None, name: str = None, id: uuid.UUID = None
+    ):
+        if project:
+            self._project = project
+        elif name:
+            self._project = self.get_project(name=name)
+        elif id:
+            self._project = self.get_project(id=id)
+        else:
+            raise ParameterException(
+                f"[ERROR] Project or name should be described."
+            )
         if self._project:
-            print(f"[INFO] set project success: {self._project.name}")
+            print(f"[INFO] Set project success: {self._project.name}")
 
-    def set_project_by_name(self, project_name: str):
-        self._project = self.get_project(project_name)
-        if self._project:
-            print(f"[INFO] set project success: {project_name}")
+    def delete_project(self, name: str = None, id: uuid.UUID = None):
+        manager = ProjectManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        if id is None and name:
+            id = manager.get_project_by_name(name=name).id
+        if id:
+            try:
+                manager.delete_project(id=id)
+            except PreConditionException as e:
+                print(
+                    f"[ERROR] If the project contains any labels, the project cannot be deleted."
+                )
+                raise e
+        else:
+            raise ParameterException(
+                f"[ERROR] Project name or id should be described."
+            )
+        print(f"[INFO] Delete project success {id}.")
 
     @property
     def project(self):
         if self._project is None:
-            print("[WARNING] Project is not described")
+            print("[WARNING] Project is not described.")
             return None
         else:
             return self._project
@@ -169,7 +253,7 @@ class Client(object):
 
     def get_num_data(self, tags=[], **kwargs):
         if self._project is None:
-            raise ParameterException(f"[ERROR] Project is not described")
+            raise ParameterException(f"[ERROR] Project is not described.")
 
         manager = LabelManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -179,7 +263,7 @@ class Client(object):
         num_data = manager.get_labels_count(**option)
 
         if num_data == 0:
-            print("[WARNING] Label list is empty")
+            print("[WARNING] Label list is empty.")
 
         return num_data
 
@@ -192,10 +276,10 @@ class Client(object):
         data_key=None,
         page=1,
         **kwargs,
-    ):  
+    ):
         if page < 1:
             raise ParameterException(
-                f"[ERROR] page: index out of bound, must be in [1, inf]"
+                f"[ERROR] page: index out of bound, must be in [1, inf]."
             )
 
         if page_idx >= 0:
@@ -213,8 +297,13 @@ class Client(object):
             command = spb.Command(type="describe_videolabel")
             tags = [{"name": tag} for tag in tags]
             option = {"project_id": self._project.id, "tags": tags, **kwargs}
+            # manager = VideoLabelManager(self.credential["team"], self.credential["access_key"])
+            # _, data_page = manager.get_labels(**option)
             data_page, _ = spb.run(
-                command=command, option=option, page=page_idx, page_size=page_size
+                command=command,
+                option=option,
+                page=page_idx,
+                page_size=page_size,
             )
             for data in data_page:
                 yield VideoDataHandle(data, self._project, self.credential)
@@ -236,7 +325,6 @@ class Client(object):
             for data in data_page:
                 yield DataHandle(data, self._project, self.credential)
 
-
     def get_data(self, id: uuid.UUID):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project is not described.")
@@ -255,7 +343,6 @@ class Client(object):
                 return DataHandle(label, self._project, self.credential)
 
     def upload_image(self, path, dataset_name, key=None, name=None):
-        # TODO: command -> asset manager 로 만들기.
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -277,7 +364,9 @@ class Client(object):
         }
 
         result = spb.run(
-            command=command, optional={"projectId": self._project.id}, option=option
+            command=command,
+            optional={"projectId": self._project.id},
+            option=option,
         )
         presigned_url = result.presigned_url
         data = open(path, "rb").read()
@@ -307,7 +396,7 @@ class Client(object):
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
         if not os.path.isdir(path):
-            raise ParameterException(f"[ERROR] Invalid path. Upload failed")
+            raise ParameterException(f"[ERROR] Invalid path. Upload failed.")
 
         # TODO: support_img_format is const
         support_img_format = ("png", "jpg", "bmp", "jpeg", "tiff", "tif")
@@ -317,7 +406,7 @@ class Client(object):
             if file_path.lower().endswith(support_img_format)
         ]
         if len(file_names) == 0:
-            raise ParameterException(f"[ERROR] Invalid path. Upload failed")
+            raise ParameterException(f"[ERROR] Invalid path. Upload failed.")
 
         if key is None:
             key = os.path.split(path)[-1]
@@ -345,40 +434,10 @@ class Client(object):
                 response = session.put(file_info["presigned_url"], data=data)
         return True
 
-    # def get_asset_by_id(self, id: uuid.UUID):
-    #     manager = AssetManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     asset = manager.get_asset_by_id(id)
-    #     return asset
-
-    # def get_asset_list(self, cursor: bytes = None, page_size: int = 10):
-    #     manager = AssetManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     count, prev, nxt, assets = manager.get_assets(
-    #         cursor=cursor, page_size=page_size
-    #     )
-    #     return count, prev, nxt, assets
-
-    # def get_asset_download_url(self, asset: Asset):
-    #     manager = AssetManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     download_url = manager.get_download_url(asset)
-    #     return download_url
-
-    # def assign_asset(self, asset: Asset, project: Project):
-    #     manager = AssetManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     result = manager.assign_asset(asset, project)
-    #     return result
-
     def get_export_list(self, page: int = 1, page_size: int = 10):
         if page < 1:
             raise ParameterException(
-                f"[ERROR] page: index out of bound, must be in [1, inf]"
+                f"[ERROR] page: index out of bound, must be in [1, inf]."
             )
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
@@ -399,25 +458,15 @@ class Client(object):
         manager = ExportManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        export = manager.get_export(project_id=self._project.id, id=id, name=name)
+        export = manager.get_export(
+            project_id=self._project.id, id=id, name=name
+        )
         return export
-
-    # def get_masks_by_export(self, id: uuid.UUID = None, name: str = None):
-    #     if self._project is None:
-    #         raise ParameterException(f"[ERROR] Project ID does not exist.")
-    #     if id is None and name is None:
-    #         raise ParameterException(f"[ERROR] id or name is required.")
-
-    #     manager = ExportManager(
-    #         self.credential["team_name"], self.credential["access_key"]
-    #     )
-    #     masks = manager.get_masks(project_id=self._project.id, id=id, name=name)
-    #     return masks
 
     def get_task_list(self, status_in, page: int = 1, page_size: int = 10):
         if page < 1:
             raise ParameterException(
-                f"[ERROR] page: index out of bound, must be in [1, inf]"
+                f"[ERROR] page: index out of bound, must be in [1, inf]."
             )
 
         if self._project is None:
@@ -467,16 +516,18 @@ class Client(object):
             task_progress = manager.get_task_progress_by_id(task_id=task_id)
             progress_percentage = 0
             if task_progress.progress > 0:
-                progress_percentage = (task_progress.total_count / task_progress.progress) * 100
+                progress_percentage = (
+                    task_progress.total_count / task_progress.progress
+                ) * 100
             print("Progress Percentage: {}".format(progress_percentage))
             if task_progress.status == "FINISHED":
-                print("Task Completed")
+                print("Task Completed.")
                 break
             elif task_progress.status == "FAILED":
-                print("Task Failed")
+                print("Task Failed.")
                 break
             elif task_progress.status == "CANCELED":
-                print("Task has been canceled")
+                print("Task has been canceled.")
                 break
 
         return task_progress
@@ -519,6 +570,11 @@ class Client(object):
         limit = label_manager.get_labels_count(
             project_id=self._project.id, tags=[{"name": tag} for tag in tags]
         )
+        if limit == 0:
+            print(
+                "[WARNING] There is no label detected by filter. Please check the filter again."
+            )
+            return None
 
         manager = TaskManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -570,6 +626,11 @@ class Client(object):
         limit = label_manager.get_labels_count(
             project_id=self._project.id, tags=[{"name": tag} for tag in tags]
         )
+        if limit == 0:
+            print(
+                "[WARNING] There is no label detected by filter. Please check the filter again."
+            )
+            return None
 
         manager = TaskManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -661,7 +722,9 @@ class DataHandle(object):
         super().__init__()
         self.credential = credential
         if data.project_id is None or data.id is None:
-            raise ParameterException(f"[ERROR] Data Handler cannot be initiated.")
+            raise ParameterException(
+                f"[ERROR] Data Handler cannot be initiated."
+            )
         self._data = data
         self._project = project
         self._created = time.time()
@@ -671,14 +734,16 @@ class DataHandle(object):
 
     def _init_label_build_info(self):
         self._label_build_params = LabelInfoBuildParams(
-            label_interface=self._project.label_interface, result=self._data.result
+            label_interface=self._project.label_interface,
+            result=self._data.result,
         )
 
     def _is_expired_image_url(self):
         global _IMAGE_URL_LIFETIME
 
         is_expired = (
-            time.time() - self._created > DataHandle._IMAGE_URL_LIFETIME_IN_SECONDS
+            time.time() - self._created
+            > DataHandle._IMAGE_URL_LIFETIME_IN_SECONDS
         )
 
         if is_expired:
@@ -747,8 +812,12 @@ class DataHandle(object):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
             return self._label_build_params.get_categories()
         else:
-            category_map = self._project.label_interface["categorization"]["word_map"]
-            id_to_name = {c["id"]: c["name"] for c in category_map if c["id"] != "root"}
+            category_map = self._project.label_interface["categorization"][
+                "word_map"
+            ]
+            id_to_name = {
+                c["id"]: c["name"] for c in category_map if c["id"] != "root"
+            }
 
             try:
                 labels = [
@@ -792,13 +861,19 @@ class DataHandle(object):
                 "categories": categories,
             }
         else:
-            category_map = self._project.label_interface["categorization"]["word_map"]
-            name_to_id = {c["name"]: c["id"] for c in category_map if c["id"] != "root"}
+            category_map = self._project.label_interface["categorization"][
+                "word_map"
+            ]
+            name_to_id = {
+                c["name"]: c["id"] for c in category_map if c["id"] != "root"
+            }
 
             try:
                 label_ids = [name_to_id[name] for name in labels]
             except KeyError:
-                raise ParameterException(f"[ERROR] Invalid category name exists")
+                raise ParameterException(
+                    f"[ERROR] Invalid category name exists"
+                )
 
             if not self._data.result:
                 self._data.result = {}
@@ -831,9 +906,13 @@ class DataHandle(object):
                 self._data.result["categorization"] = {"value": []}
             self._data.result = {**self._data.result, "objects": labels}
 
-    def add_object_label(self, class_name, annotation, properties=None, id=None):
+    def add_object_label(
+        self, class_name, annotation, properties=None, id=None
+    ):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
-            self._label_build_params.add_object(class_name, annotation, properties, id)
+            self._label_build_params.add_object(
+                class_name, annotation, properties, id
+            )
         elif self._data.workapp == WorkappType.IMAGE_DEFAULT.value:
             print("[ERROR] add_object_list doesn't support.")
 
@@ -851,7 +930,7 @@ class DataHandle(object):
         )
         if build_params is not None:
             self._init_label_build_info()
-        
+
         return True
 
     def set_tags(self, tags: list = None):
@@ -875,7 +954,9 @@ class VideoDataHandle(object):
         self._created = time.time()
 
     def _is_expired_video_url(self):
-        is_expired = time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
+        is_expired = (
+            time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
+        )
 
         if is_expired:
             print(
@@ -890,7 +971,9 @@ class VideoDataHandle(object):
             _ = spb.run(command=command, option=self._data)
         else:
             _ = spb.run(
-                command=command, option=self._data, optional={"info": json.dumps(info)}
+                command=command,
+                option=self._data,
+                optional={"info": json.dumps(info)},
             )
 
     ##############################
@@ -923,7 +1006,9 @@ class VideoDataHandle(object):
         if data_url is None:
             data_url = json.loads(self._data.data_url)
 
-        file_ext = data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
+        file_ext = (
+            data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
+        )
         file_name = f"image_{(idx+1):08}.{file_ext}"
         return f"{data_url['base_url']}{file_name}?{data_url['query']}"
 
@@ -990,7 +1075,9 @@ class VideoDataHandle(object):
         if result is None:
             label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = build_label_info(self._project.label_interface, result=result)
+            label_info = build_label_info(
+                self._project.label_interface, result=result
+            )
             label_info.init_objects()
 
         for label in labels:
@@ -1002,7 +1089,9 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = build_label_info(self._project.label_interface, result=result)
+        label_info = build_label_info(
+            self._project.label_interface, result=result
+        )
         return label_info.get_objects()
 
     def set_category_labels(self, label):
@@ -1010,7 +1099,9 @@ class VideoDataHandle(object):
         if result is None:
             label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = build_label_info(self._project.label_interface, result=result)
+            label_info = build_label_info(
+                self._project.label_interface, result=result
+            )
             label_info.init_categories()
 
         label_info.set_categories(**label)
@@ -1021,14 +1112,17 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = build_label_info(self._project.label_interface, result=result)
+        label_info = build_label_info(
+            self._project.label_interface, result=result
+        )
         return label_info.get_categories()
 
     def update_data(self):
         self._upload_to_suite(info={"tags": self._info["tags"]})
         with requests_retry_session() as session:
             write_response = session.put(
-                self._data.info_write_presigned_url, data=json.dumps(self._info)
+                self._data.info_write_presigned_url,
+                data=json.dumps(self._info),
             )
         return True
 

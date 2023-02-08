@@ -17,6 +17,7 @@ from spb.exceptions import (
     ForbiddenException,
     NotAvailableServerException,
     NotFoundException,
+    PreConditionException,
     SDKInitiationFailedException,
     UnauthorizedException,
 )
@@ -27,7 +28,8 @@ logger = logging.getLogger()
 
 class BaseSession:
     endpoint = (
-        os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com") + "/graphql"
+        os.getenv("SPB_APP_API_ENDPOINT", "https://api.superb-ai.com")
+        + "/graphql"
     )
     headers = {
         "content-type": "application/json",
@@ -41,14 +43,21 @@ class BaseSession:
         self.credential = None
         self._set_credential(profile, team_name, access_key)
 
-    def _set_credential(self, profile="default", team_name=None, access_key=None):
+    def _set_credential(
+        self, profile="default", team_name=None, access_key=None
+    ):
         if not profile and not team_name and not access_key:
             profile = "default"
         self.headers = None
         if team_name and access_key:
             # 1st priority
-            self.credential = {"team_name": team_name, "access_key": access_key}
-        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv("SPB_TEAM_NAME", None):
+            self.credential = {
+                "team_name": team_name,
+                "access_key": access_key,
+            }
+        elif os.getenv("SPB_ACCESS_KEY", None) and os.getenv(
+            "SPB_TEAM_NAME", None
+        ):
             # 2nd priority
             self.credential = {
                 "team_name": os.getenv("SPB_TEAM_NAME"),
@@ -56,7 +65,9 @@ class BaseSession:
             }
         elif profile and not team_name and not access_key:
             # 3rd
-            credential_path = os.path.join(os.path.expanduser("~"), ".spb", "config")
+            credential_path = os.path.join(
+                os.path.expanduser("~"), ".spb", "config"
+            )
             # check exists credentials
             if not os.path.exists(credential_path):
                 self.credential = None
@@ -67,7 +78,9 @@ class BaseSession:
             self.credential = config
         else:
             # To raise SDKInitiationFailedException error
-            raise SDKInitiationFailedException("** [ERROR] credential does not exists")
+            raise SDKInitiationFailedException(
+                "** [ERROR] credential does not exists"
+            )
 
     def _set_headers(self):
         if self.headers is None and self.credential is not None:
@@ -93,7 +106,9 @@ class BaseSession:
         elif self.headers is not None:
             return
         else:
-            raise SDKInitiationFailedException("** [ERROR] credential does not exists.")
+            raise SDKInitiationFailedException(
+                "** [ERROR] credential does not exists."
+            )
 
     def _read_config(self, credential_path, profile):
         config = configparser.ConfigParser()
@@ -113,9 +128,9 @@ class BaseSession:
         vars = ["access_key", "account_name"]
         for var in vars:
             try:
-                ret["team_name" if var == "account_name" else var] = config.get(
-                    profile, var
-                )
+                ret[
+                    "team_name" if var == "account_name" else var
+                ] = config.get(profile, var)
             except (configparser.NoSectionError, configparser.NoOptionError):
                 return None
                 break
@@ -200,7 +215,9 @@ class BaseSession:
                 elif int(error["extensions"]["code"]) == 403:
                     self.history.appendleft({"ForbiddenException"})
                     raise ForbiddenException("Forbidden Exception")
-                elif error["message"] == "Request failed with status code 404" or int(
+                elif error[
+                    "message"
+                ] == "Request failed with status code 404" or int(
                     error["extensions"]["code"] == 404
                 ):
                     self.history.appendleft({"NotFoundException": data})
@@ -210,6 +227,9 @@ class BaseSession:
                 elif int(error["extensions"]["code"]) == 409:
                     self.history.appendleft({"ConflictException": data})
                     raise ConflictException("Conflict Exception")
+                elif int(error["extensions"]["code"]) == 428:
+                    self.history.appendleft({"PreConditionException": data})
+                    raise PreConditionException("PreCondition Exception")
                 elif (
                     error["message"] == "Not Available Server"
                     or int(error["extensions"]["code"]) == 503

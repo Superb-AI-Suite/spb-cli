@@ -1,7 +1,8 @@
 import uuid
 
 from spb.core import Model
-from spb.core.models.types import ID, Int, JsonList, JsonObject, String
+from spb.core.models.types import (ID, Boolean, Int, JsonList, JsonObject,
+                                   String)
 
 
 class Project(Model):
@@ -9,10 +10,17 @@ class Project(Model):
     name = String(property_name="name")
     label_interface = JsonObject(property_name="labelInterface")
     workapp = String(property_name="workapp")
-    label_count = Int(property_name="labelCount")
+    settings = JsonObject(property_name="settings", default={})
+    is_public = Boolean(property_name="isPublic")
+    created_at = String(property_name="createdAt")
+    created_by = String(property_name="createdBy")
+    last_updated_at = String(property_name="lastUpdatedAt")
+    last_updated_by = String(property_name="lastUpdatedBy")
     progress = Int(property_name="progress")
     submitted_label_count = Int(property_name="submittedLabelCount", default=0)
-    in_progress_label_count = Int(property_name="inProgressLabelCount", default=0)
+    in_progress_label_count = Int(
+        property_name="inProgressLabelCount", default=0
+    )
     skipped_label_count = Int(property_name="skippedLabelCount", default=0)
     stats = JsonList(property_name="stats", default=[])
 
@@ -25,7 +33,12 @@ class Project(Model):
             "name": self.name,
             "label_interface": self.label_interface,
             "workapp": self.workapp,
-            "label_count": self.label_count,
+            "settings": self.settings,
+            "is_public": self.is_public,
+            "created_at": self.created_at,
+            "created_by": self.created_by,
+            "last_updated_at": self.last_updated_at,
+            "last_updated_by": self.last_updated_by,
             "progress": self.progress,
             "submitted_label_count": self.submitted_label_count,
             "in_progress_label_count": self.in_progress_label_count,
