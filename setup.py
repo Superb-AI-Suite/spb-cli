@@ -8,6 +8,7 @@ def long_description():
         readme = f.read()
     return readme
 
+
 def load_config():
     with io.open("spb/sdk_config.py") as fid:
         result = {}
@@ -19,6 +20,7 @@ def load_config():
                 result[splitted_line[0]] = splitted_line[-1][1:-1]
             else:
                 return result
+
 
 configs = load_config()
 setup(
@@ -64,7 +66,7 @@ setup(
         "six==1.15.0",
         "tqdm==4.46.1",
         "twine==3.1.1",
-        "typing-extensions==3.7.4.2",
+        "typing-extensions>=3.7.4.2",
         "urllib3==1.25.9",
         "webencodings==0.5.1",
         "zipp==3.1.0",
