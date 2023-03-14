@@ -1,5 +1,6 @@
-from .. import __version__
 from uuid import uuid4
+
+from .. import __version__
 from ..common.image_utils import calculate_imageV2_properties_count
 from .image_label_creator import (
     BoxCreator,
@@ -24,7 +25,9 @@ class LabelInfo:
 
     @classmethod
     def _set_properties(cls, properties_def, properties):
-        prop_def_map = {prop_def["name"]: prop_def for prop_def in properties_def}
+        prop_def_map = {
+            prop_def["name"]: prop_def for prop_def in properties_def
+        }
         converted_properties = []
         for prop in properties:
             prop_def = prop_def_map[prop["name"]]
@@ -36,7 +39,9 @@ class LabelInfo:
                             "type": prop_def["type"],
                             "property_id": prop_def["id"],
                             "property_name": prop_def["name"],
-                            "option_ids": [opt_map[val]["id"] for val in prop["value"]],
+                            "option_ids": [
+                                opt_map[val]["id"] for val in prop["value"]
+                            ],
                             "option_names": [
                                 opt_map[val]["name"] for val in prop["value"]
                             ],
@@ -65,7 +70,9 @@ class LabelInfo:
 
     @classmethod
     def _get_properties(cls, properties_def, properties):
-        prop_def_map = {prop_def["name"]: prop_def for prop_def in properties_def}
+        prop_def_map = {
+            prop_def["name"]: prop_def for prop_def in properties_def
+        }
         converted_properties = []
         for prop in properties:
             prop_def = prop_def_map[prop["property_name"]]
@@ -99,7 +106,8 @@ class LabelInfo:
             for object_class in label_interface.object_detection.object_classes
         }
         self.keypoint_map = {
-            point["id"]: point for point in label_interface.object_detection.keypoints
+            point["id"]: point
+            for point in label_interface.object_detection.keypoints
         }
 
         if result is None:
@@ -135,7 +143,9 @@ class LabelInfo:
 
     def add_object(self, class_name, annotation, properties=None, id=None):
         id = str(uuid4()) if id is None else id
-        annotation_type = self.object_classes_map[class_name]["annotation_type"]
+        annotation_type = self.object_classes_map[class_name][
+            "annotation_type"
+        ]
 
         self.result["objects"].append(
             {
@@ -166,7 +176,9 @@ class LabelInfo:
                     "class_name": obj["class_name"],
                     "annotation": obj["annotation"],
                     "properties": LabelInfo._get_properties(
-                        self.object_classes_map[obj["class_name"]]["properties"],
+                        self.object_classes_map[obj["class_name"]][
+                            "properties"
+                        ],
                         obj["properties"],
                     ),
                 }
@@ -176,8 +188,9 @@ class LabelInfo:
         except Exception as e:
             return []
 
-    def set_categories(self, categorization=None):
-        properties = categorization.to_dict()["properties"]
+    def set_categories(self, categorization=None, properties=None):
+        if categorization:
+            properties = categorization.to_dict()["properties"]
         self.result["categories"] = {
             "properties": LabelInfo._set_properties(
                 self.label_interface.categorization.properties,
@@ -201,12 +214,17 @@ class LabelInfo:
         classes_count = {}
         classes_name = {}
         for obj in self.result["objects"]:
-            classes_count[obj["class_id"]] = classes_count.get(obj["class_id"], 0) + 1
+            classes_count[obj["class_id"]] = (
+                classes_count.get(obj["class_id"], 0) + 1
+            )
             classes_name[obj["class_id"]] = obj["class_name"]
         class_val = list(classes_name.values())
 
         categories_id = []
-        if "categories" in self.result and "properties" in self.result["categories"]:
+        if (
+            "categories" in self.result
+            and "properties" in self.result["categories"]
+        ):
             for prop in self.result["categories"]["properties"]:
                 if "option_id" in prop:
                     categories_id.append(prop["option_id"])
@@ -241,9 +259,9 @@ class LabelInfo:
                     "objects": [
                         {
                             "id": obj["id"],
-                            "color": self.object_classes_map[obj["class_name"]][
-                                "color"
-                            ],
+                            "color": self.object_classes_map[
+                                obj["class_name"]
+                            ]["color"],
                             "visible": True,
                             "selected": False,
                         }
