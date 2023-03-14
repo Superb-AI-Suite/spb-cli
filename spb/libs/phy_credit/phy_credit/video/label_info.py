@@ -28,9 +28,7 @@ class LabelInfo:
 
     @classmethod
     def _set_properties(cls, properties_def, properties):
-        prop_def_map = {
-            prop_def["name"]: prop_def for prop_def in properties_def
-        }
+        prop_def_map = {prop_def["name"]: prop_def for prop_def in properties_def}
         converted_properties = []
         for prop in properties:
             prop_def = prop_def_map[prop["name"]]
@@ -42,9 +40,7 @@ class LabelInfo:
                             "type": prop_def["type"],
                             "property_id": prop_def["id"],
                             "property_name": prop_def["name"],
-                            "option_ids": [
-                                opt_map[val]["id"] for val in prop["value"]
-                            ],
+                            "option_ids": [opt_map[val]["id"] for val in prop["value"]],
                             "option_names": [
                                 opt_map[val]["name"] for val in prop["value"]
                             ],
@@ -73,9 +69,7 @@ class LabelInfo:
 
     @classmethod
     def _get_properties(cls, properties_def, properties):
-        prop_def_map = {
-            prop_def["name"]: prop_def for prop_def in properties_def
-        }
+        prop_def_map = {prop_def["name"]: prop_def for prop_def in properties_def}
         converted_properties = []
         for prop in properties:
             prop_def = prop_def_map[prop["property_name"]]
@@ -109,8 +103,7 @@ class LabelInfo:
             for object_class in label_interface.object_tracking.object_classes
         }
         self.keypoint_map = {
-            point["id"]: point
-            for point in label_interface.object_tracking.keypoints
+            point["id"]: point for point in label_interface.object_tracking.keypoints
         }
         if result is None:
             self.result = {}
@@ -143,8 +136,44 @@ class LabelInfo:
     def get_2D_cubid_creator(self):
         return Cuboid2DCreator(self.object_classes_map)
 
-    def add_object(self, label_object):
-        self.result["objects"].append(label_object.to_dict())
+    def add_object(
+        self, tracking_id, class_name, annotations, properties=None, id=None
+    ):
+        id = str(uuid4()) if id is None else id
+
+        self.result["objects"].append(
+            {
+                "id": id,
+                "tracking_id": tracking_id,
+                "class_id": self.object_classes_map[class_name]["id"],
+                "class_name": class_name,
+                "annotation_type": self.object_classes_map[class_name][
+                    "annotation_type"
+                ],
+                "frames": [
+                    {
+                        "num": anno["frame_num"],
+                        "annotation": {
+                            "multiple": anno.get("multiple", False),
+                            "coord": anno["coord"],
+                            "meta": anno.get("meta", {}),
+                        },
+                        "properties": LabelInfo._set_properties(
+                            self.object_classes_map[class_name]["properties"],
+                            anno.get("properties", []),
+                        ),
+                    }
+                    for anno in annotations
+                ],
+                "properties": LabelInfo._set_properties(
+                    self.object_classes_map[class_name]["properties"],
+                    properties if properties is not None else [],
+                ),
+            }
+        )
+
+    # def add_object(self, label_object):
+    #     self.result["objects"].append(label_object.to_dict())
 
     def get_objects(self):
         ocm = self.object_classes_map
@@ -157,9 +186,7 @@ class LabelInfo:
                     "annotations": [
                         {
                             "frame_num": frame["num"],
-                            "multiple": frame["annotation"].get(
-                                "multiple", False
-                            ),
+                            "multiple": frame["annotation"].get("multiple", False),
                             "coord": frame["annotation"]["coord"],
                             "properties": LabelInfo._get_properties(
                                 ocm[obj["class_name"]]["properties"],
@@ -234,13 +261,9 @@ class LabelInfo:
         class_val = list(classes_name.values())
 
         categories_id = []
-        if (
-            "categories" in self.result
-            and "properties" in self.result["categories"]
-        ):
+        if "categories" in self.result and "properties" in self.result["categories"]:
             properties_list = [self.result["categories"]["properties"]] + [
-                frame["properties"]
-                for frame in self.result["categories"]["frames"]
+                frame["properties"] for frame in self.result["categories"]["frames"]
             ]
             for properties in properties_list:
                 for prop in properties:
