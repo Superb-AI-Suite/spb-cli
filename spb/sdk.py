@@ -48,6 +48,7 @@ from spb.exports.manager import ExportManager
 from spb.labels.label import Tags, WorkappType
 from spb.labels.manager import LabelManager
 from spb.labels.serializer import LabelInfoBuildParams
+from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.projects import Project
 from spb.projects.manager import ProjectManager
 from spb.tasks.manager import TaskManager
@@ -68,9 +69,7 @@ class Client(object):
         super().__init__()
 
         if team_name is not None and access_key is not None:
-            spb.setup_default_session(
-                team_name=team_name, access_key=access_key
-            )
+            spb.setup_default_session(team_name=team_name, access_key=access_key)
             self.credential = {
                 "team_name": team_name,
                 "access_key": access_key,
@@ -170,9 +169,7 @@ class Client(object):
         elif name:
             project = manager.get_project_by_name(name=name)
         else:
-            raise ParameterException(
-                f"[ERROR] Project name or id should be described."
-            )
+            raise ParameterException(f"[ERROR] Project name or id should be described.")
         return project
 
     def get_projects(
@@ -209,9 +206,7 @@ class Client(object):
         elif id:
             self._project = self.get_project(id=id)
         else:
-            raise ParameterException(
-                f"[ERROR] Project or name should be described."
-            )
+            raise ParameterException(f"[ERROR] Project or name should be described.")
         if self._project:
             print(f"[INFO] Set project success: {self._project.name}")
 
@@ -230,9 +225,7 @@ class Client(object):
                 )
                 raise e
         else:
-            raise ParameterException(
-                f"[ERROR] Project name or id should be described."
-            )
+            raise ParameterException(f"[ERROR] Project name or id should be described.")
         print(f"[INFO] Delete project success {id}.")
 
     @property
@@ -458,9 +451,7 @@ class Client(object):
         manager = ExportManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        export = manager.get_export(
-            project_id=self._project.id, id=id, name=name
-        )
+        export = manager.get_export(project_id=self._project.id, id=id, name=name)
         return export
 
     def get_task_list(self, status_in, page: int = 1, page_size: int = 10):
@@ -690,9 +681,7 @@ class Client(object):
         manager = TaskManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        skip_task_request = manager.skip_label(
-            project_id=self._project.id, tags=tags
-        )
+        skip_task_request = manager.skip_label(project_id=self._project.id, tags=tags)
 
         return skip_task_request
 
@@ -722,9 +711,7 @@ class DataHandle(object):
         super().__init__()
         self.credential = credential
         if data.project_id is None or data.id is None:
-            raise ParameterException(
-                f"[ERROR] Data Handler cannot be initiated."
-            )
+            raise ParameterException(f"[ERROR] Data Handler cannot be initiated.")
         self._data = data
         self._project = project
         self._created = time.time()
@@ -742,8 +729,7 @@ class DataHandle(object):
         global _IMAGE_URL_LIFETIME
 
         is_expired = (
-            time.time() - self._created
-            > DataHandle._IMAGE_URL_LIFETIME_IN_SECONDS
+            time.time() - self._created > DataHandle._IMAGE_URL_LIFETIME_IN_SECONDS
         )
 
         if is_expired:
@@ -812,12 +798,8 @@ class DataHandle(object):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
             return self._label_build_params.get_categories()
         else:
-            category_map = self._project.label_interface["categorization"][
-                "word_map"
-            ]
-            id_to_name = {
-                c["id"]: c["name"] for c in category_map if c["id"] != "root"
-            }
+            category_map = self._project.label_interface["categorization"]["word_map"]
+            id_to_name = {c["id"]: c["name"] for c in category_map if c["id"] != "root"}
 
             try:
                 labels = [
@@ -861,19 +843,13 @@ class DataHandle(object):
                 "categories": categories,
             }
         else:
-            category_map = self._project.label_interface["categorization"][
-                "word_map"
-            ]
-            name_to_id = {
-                c["name"]: c["id"] for c in category_map if c["id"] != "root"
-            }
+            category_map = self._project.label_interface["categorization"]["word_map"]
+            name_to_id = {c["name"]: c["id"] for c in category_map if c["id"] != "root"}
 
             try:
                 label_ids = [name_to_id[name] for name in labels]
             except KeyError:
-                raise ParameterException(
-                    f"[ERROR] Invalid category name exists"
-                )
+                raise ParameterException(f"[ERROR] Invalid category name exists")
 
             if not self._data.result:
                 self._data.result = {}
@@ -906,13 +882,9 @@ class DataHandle(object):
                 self._data.result["categorization"] = {"value": []}
             self._data.result = {**self._data.result, "objects": labels}
 
-    def add_object_label(
-        self, class_name, annotation, properties=None, id=None
-    ):
+    def add_object_label(self, class_name, annotation, properties=None, id=None):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
-            self._label_build_params.add_object(
-                class_name, annotation, properties, id
-            )
+            self._label_build_params.add_object(class_name, annotation, properties, id)
         elif self._data.workapp == WorkappType.IMAGE_DEFAULT.value:
             print("[ERROR] add_object_list doesn't support.")
 
@@ -954,9 +926,7 @@ class VideoDataHandle(object):
         self._created = time.time()
 
     def _is_expired_video_url(self):
-        is_expired = (
-            time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
-        )
+        is_expired = time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
 
         if is_expired:
             print(
@@ -1006,9 +976,7 @@ class VideoDataHandle(object):
         if data_url is None:
             data_url = json.loads(self._data.data_url)
 
-        file_ext = (
-            data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
-        )
+        file_ext = data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
         file_name = f"image_{(idx+1):08}.{file_ext}"
         return f"{data_url['base_url']}{file_name}?{data_url['query']}"
 
@@ -1075,9 +1043,7 @@ class VideoDataHandle(object):
         if result is None:
             label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = build_label_info(
-                self._project.label_interface, result=result
-            )
+            label_info = build_label_info(self._project.label_interface, result=result)
             label_info.init_objects()
 
         for label in labels:
@@ -1089,9 +1055,7 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = build_label_info(
-            self._project.label_interface, result=result
-        )
+        label_info = build_label_info(self._project.label_interface, result=result)
         return label_info.get_objects()
 
     def set_category_labels(self, label):
@@ -1099,9 +1063,7 @@ class VideoDataHandle(object):
         if result is None:
             label_info = build_label_info(self._project.label_interface)
         else:
-            label_info = build_label_info(
-                self._project.label_interface, result=result
-            )
+            label_info = build_label_info(self._project.label_interface, result=result)
             label_info.init_categories()
 
         label_info.set_categories(**label)
@@ -1112,9 +1074,7 @@ class VideoDataHandle(object):
         result = self._get_result()
         if result is None:
             return None
-        label_info = build_label_info(
-            self._project.label_interface, result=result
-        )
+        label_info = build_label_info(self._project.label_interface, result=result)
         return label_info.get_categories()
 
     def update_data(self):
