@@ -9,6 +9,7 @@ from spb.core.models.types import JsonObject, String, ID, Int, PlainObjectList, 
 class WorkappType(Enum):
     IMAGE_DEFAULT = 'IMAGE_DEFAULT'
     IMAGE_SIESTA = 'IMAGE_SIESTA'
+    POINTCLOUDS_SIESTA = 'POINTCLOUDS_SIESTA'
 
 class Stats(AttributeModel):
     def __init__(self, *args, **kwargs):

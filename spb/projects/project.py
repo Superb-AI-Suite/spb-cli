@@ -1,6 +1,7 @@
 import uuid
 
 from spb.core import Model
+from spb.core.models.attrs import AttributeModel
 from spb.core.models.types import (
     ID,
     Boolean,
@@ -8,7 +9,27 @@ from spb.core.models.types import (
     JsonList,
     JsonObject,
     String,
+    PlainObjectList,
 )
+
+
+class PointcloudData(Model):
+    id = ID(property_name="id", default_value=uuid.uuid4())
+    key = String(property_name="dataKey")
+    group = String(property_name="dataset")
+    info = JsonObject(property_name="info")
+    last_updated_by = String(property_name='lastUpdatedBy')
+    last_updated_at = String(property_name='lastUpdatedAt')
+    created_at = String(property_name="createAt")
+    create_by = String(property_name="createdBy")
+
+    read_url = JsonObject(property_name="readUrl")
+    read_custom_url = JsonObject(property_name="readCustomUrl")
+    upload_url = JsonObject(property_name="uploadUrl")
+
+    def __repr__(self):
+        return f"Suite Pointcloud Data : <{self.id}> {self.key}"
+
 
 
 class Project(Model):
