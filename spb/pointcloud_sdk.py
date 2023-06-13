@@ -39,6 +39,8 @@ class PointcloudDataHandle (DataHandle):
     def get_data_urls(self):
         if self._is_expired_image_url():
             return None
+        if self._data.data_url is None:
+            return None
 
         data_urls = json.loads(self._data.data_url)
         frames = data_urls.get("frame_infos", [])
@@ -94,6 +96,9 @@ class PointcloudDataHandle (DataHandle):
             return None
         
         info_url = self.data.info_read_presigned_url
+        if info_url is None:
+            return None
+        
         webURL = urllib.request.urlopen(info_url)
         data = webURL.read()
         encoding = webURL.info().get_content_charset("utf-8")
