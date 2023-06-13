@@ -8,7 +8,6 @@ def long_description():
         readme = f.read()
     return readme
 
-
 def load_config():
     with io.open("spb/sdk_config.py") as fid:
         result = {}
@@ -20,7 +19,6 @@ def load_config():
                 result[splitted_line[0]] = splitted_line[-1][1:-1]
             else:
                 return result
-
 
 configs = load_config()
 setup(
@@ -51,7 +49,7 @@ setup(
         "commonmark==0.9.1",
         "docutils<0.16,>=0.10",
         "idna==2.9",
-        "importlib-metadata==3.6; python_version < '3.8'",
+        "importlib-metadata<=4.11.4, >=3.6; python_version < '3.8'",
         "keyring==21.2.1",
         "packaging==20.4",
         "pkginfo==1.5.0.1",
@@ -60,17 +58,17 @@ setup(
         "pyparsing==2.4.7",
         "python-datauri==0.2.8",
         "readme-renderer==26.0",
-        "requests==2.23.0",
+        "requests<=2.29,>=2.23.0",
         "requests-toolbelt==0.9.1",
         "rich==10.2.2",
         "six==1.15.0",
         "tqdm==4.46.1",
         "twine==3.1.1",
-        "typing-extensions>=3.7.4.2",
+        "typing-extensions==3.7.4.2",
         "urllib3==1.25.9",
         "webencodings==0.5.1",
         "zipp==3.1.0",
-        "scikit-image>=0.16.1",
+        "scikit-image<=0.20.0,>=0.16.1",
         "botocore>=1.20.82",
         "boto3>=1.17.82",
         "natsort>=7.1.0",

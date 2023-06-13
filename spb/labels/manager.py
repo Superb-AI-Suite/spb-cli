@@ -219,9 +219,13 @@ class LabelManager(BaseManager):
             else:
                 label_info = label.result
             result = {"tags": label_info.get("tags", None)}
+            attribute_maps.update({label.get_attribute_type("result"): result})
+        elif label.workapp == WorkappType.POINTCLOUDS_SIESTA.value:
+            pass
         else:
             result = label.result
-        attribute_maps.update({label.get_attribute_type("result"): result})
+            attribute_maps.update({label.get_attribute_type("result"): result})
+        
         self.query.attrs.update(attribute_maps)
         self.query.required_attrs.extend(
             label.get_property_names(include=["id", "project_id", "workapp"])
@@ -236,7 +240,7 @@ class LabelManager(BaseManager):
         data = self.session.get_data_from_mutation(response, query_id)
         updated_label = Label(**data)
 
-        if label.workapp == WorkappType.IMAGE_SIESTA.value:
+        if label.workapp in [WorkappType.IMAGE_SIESTA.value]:
             label.info_write_presigned_url = updated_label.info_write_presigned_url
             self.set_info_with_url(label_info=label_info, label=label)
             updated_label.result = label_info.get("result", None)

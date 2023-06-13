@@ -1,11 +1,14 @@
 import uuid
+import json
+import os
 from typing import List, Optional
 
 from spb.core.manager import BaseManager
-from spb.exceptions import PreConditionException
+from spb.exceptions import PreConditionException, ParameterException, APIFormatException, APIUnknownException
 from spb.libs.phy_credit.phy_credit.imageV2.project_info import ProjectInfo
+from spb.utils.utils import requests_retry_session
 
-from .project import Project
+from .project import Project, PointcloudData
 from .query import Query
 from .session import Session
 
@@ -173,3 +176,131 @@ class ProjectManager(BaseManager):
         response = self.session.execute(query, values)
 
         return self.session.get_result_from_response(response, query_id)
+
+
+    def upload_pointcloud_data(self, manifest_file_path:str, dataset_name:str, data_key:str = None, manifest_file_name:str = None):
+        if not os.path.isfile(manifest_file_path):
+            raise ParameterException("[ERROR] Invalid meta path. Upload failed.")
+        if dataset_name is None or not isinstance(dataset_name, str):
+            raise ParameterException("[ERROR] Invalid dataset name. Upload failed")
+        
+        # Load manifest file
+        with open(manifest_file_path, 'r') as file:
+            try:
+                manifest_file_name = manifest_file_name if manifest_file_name is not None else "manifest.json"
+                manifest_file_size = os.path.getsize(manifest_file_path)
+                meta = json.load(file)
+            except json.decoder.JSONDecodeError as e:
+                print("[ERROR] Manifest file does not json file. Upload failed.")
+                raise e
+            
+        # Manifest validation
+        try:
+            data_key = meta["key"] if data_key is None else data_key
+        except:
+            print("[ERROR] Key load failed. Check manifest file contents.")
+        try:
+            manifest = meta["manifest"]
+            frame_count = manifest["frame_count"]
+            frames = manifest["frames"]
+            if len(frames) != frame_count:
+                raise ParameterException
+            total_image_count = 0
+            for i in range(0, len(frames)):
+                total_image_count += len(frames[i]['images'])
+            total_file_count = len(frames) + total_image_count
+            prefix = os.path.dirname(manifest_file_path)
+        except Exception as e:
+            raise ParameterException("[ERROR] Manifest load failed. Check manifest file contents.")
+        
+        # Frame info validation & Data transform
+        try:
+            frame_infos = []
+            for frame in frames:
+                frame_infos.append({
+                    "frame_number": frame["frame_number"],
+                    "frame_file_name": frame["frame_path"],
+                    "frame_file_size": os.path.getsize(os.path.join(prefix, frame["frame_path"])),
+                    "image_count": len(frame["images"]),
+                    "image_infos": [{
+                        "image_file_name": image["image_path"],
+                        "image_file_size": os.path.getsize(os.path.join(prefix, image["image_path"])),
+                    } for image in frame["images"]]
+                })
+        except Exception as e:
+            raise ParameterException("[ERROR] Build frame info failed. Check manifest file contents.")
+        
+        # Build assets_request body
+        try:
+            pointcloud_data = {
+                "key": data_key,
+                "group": dataset_name,
+                "manifest_file_name": manifest_file_name,
+                "manifest_file_size": manifest_file_size,
+                "total_file_count": total_file_count,
+                "frame_count": frame_count,
+                "frame_infos": frame_infos,
+            }
+        except Exception as e:
+            print("[ERROR] Error build assets data. Check manifest file contents.")
+            raise e
+
+        try:
+            request_body = {
+                "type": "pointclouds-presigned-url",
+                "fileInfo": pointcloud_data
+            }
+        except Exception as e:
+            print("[ERROR] Error build create request data. Check manifest file contents.")
+            raise e
+        # Generate graphql query
+        query = "mutation ($type:String!, $fileInfo:JSONObject!) { createDatum (type: $type, fileInfo: $fileInfo) {id info dataKey dataset readUrl readCustomUrl { base_url query } uploadUrl createdAt createdBy lastUpdatedAt lastUpdatedBy}}"
+        response = self.session.execute(query, request_body)
+        response_json = response.json()
+        if 'errors' in response_json:
+            errors = response_json['errors']
+            raise APIFormatException(message=errors[0]['message'])
+
+        data = response_json['data']['createDatum']
+        created_asset = PointcloudData(**data)
+
+        # Build upload urls
+        try:
+            urls = created_asset.upload_url["url"]["image_urls"]
+            manifest_upload_url = urls["manifest_url"]
+            frame_upload_urls = urls["frame_urls"]
+        except Exception as e:
+            raise APIUnknownException("[ERROR] Error build upload file urls. Plz, delete data from suite.")
+
+        # Upload manifest file
+
+        with open(manifest_file_path, 'rb') as file, requests_retry_session() as session:
+            session.put(
+                manifest_upload_url,
+                data=file
+            )
+
+        for idx, value in enumerate(frame_upload_urls):
+            frame_url = value["frame_url"]
+            frame_info = frame_infos[idx]
+            # Upload frame content
+            with open(os.path.join(prefix, frame_info["frame_file_name"]), 'rb') as file, requests_retry_session()  as session:
+                session.put(
+                    frame_url,
+                    data=file
+                )
+            
+            # Extract image contents
+            image_urls = value["image_urls"]
+            image_infos = frame_info["image_infos"]
+            for image_idx, image_url in enumerate(image_urls):
+                image_info = image_infos[image_idx]
+                # Upload image content
+                with open(os.path.join(prefix, image_info["image_file_name"]), 'rb') as file, requests_retry_session()  as session :
+                    session.put(
+                        image_url,
+                        data=file
+                    )
+
+        return created_asset
+    
