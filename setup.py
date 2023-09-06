@@ -60,7 +60,6 @@ setup(
         "typing-extensions<4.0.0,>=3.7.4",
         "six==1.15.0",
         "tqdm==4.46.1",
-        "twine==3.1.1",
         "botocore>=1.20.82",
         "boto3>=1.17.82",
         "natsort>=7.1.0",
