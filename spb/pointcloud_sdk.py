@@ -1,6 +1,4 @@
-import time
 import urllib
-import skimage.io
 import json
 import os
 
@@ -12,6 +10,7 @@ from spb.exceptions import (
     NotSupportedException,
     SDKException
 )
+
 
 class PointcloudDataHandle (DataHandle):
     

@@ -16,19 +16,17 @@ setuptools = "*"
 requests-mock = "==1.9.2"
 pipenv-setup = "==3.1.1"
 pexpect = "==4.8.0"
+notebook = "*"
 
 [packages]
 requests = "==2.25.1"
 twine = "==3.4.1"
-rich = "==10.2.2"
-python-datauri = "==1.0.0"
+rich = "==13.5.2"
 click = "==8.0.1"
 boto3 = "==1.17.82"
-scikit-image = "==0.18.1"
 semver = "==2.13.0"
 importlib-metadata = "==4.11.4"
-urllib3 = "==1.25.9"
 natsort = "==7.1.1"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"

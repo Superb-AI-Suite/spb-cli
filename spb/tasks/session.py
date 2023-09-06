@@ -37,7 +37,12 @@ class Session(BaseSession):
         self._check_errors(response_json)
         data = response_json['data'][query_id]
         return Task(**data)
-
+    
+    def extract_labels_export_task(self, response, query_id):
+        response_json = response.json()
+        self._check_errors(response_json)
+        data = response_json['data'][query_id]
+        return Task(**data)
 
     def _check_errors(self, response_json):
         if 'errors' in response_json:

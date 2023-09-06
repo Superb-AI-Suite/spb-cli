@@ -1,12 +1,15 @@
 import json
 import logging
 import uuid
+from typing import Optional
 
 import requests
 from spb.core.manager import BaseManager
-from spb.exceptions import APIException
+from spb.exceptions import APIException, ParameterException
 from spb.labels.serializer import LabelInfoBuildParams
 from spb.utils.utils import requests_retry_session
+from spb.utils.search_filter import SearchFilter
+from spb.projects.project import Project
 
 from .label import Label, WorkappType
 from .query import Query
@@ -63,6 +66,83 @@ class LabelManager(BaseManager):
             raise e
 
         return response.json()["data"].get("labels", {"count": None})["count"]
+
+    def search_labels_count(
+        self,
+        project: Project,
+        filter: Optional[SearchFilter] = None,
+    ):
+        count, _, _ = self.search_label_ids(
+            project=project,
+            filter=filter,
+            page_size=1
+        )
+        return count
+
+    def search_labels(
+        self,
+        project: Project,
+        filter: Optional[SearchFilter] = None,
+        cursor: Optional[str] = None,
+        page_size: int = 10,
+    ):
+        if project.settings.get("allow_advanced_qa", False):
+            raise ParameterException("[ERROR] search_labels function does not support Allow Advanced QA project.")
+        if page_size > 10:
+            raise ParameterException("[ERROR] The page_size must be less than 11")
+
+        QUERY_ID = "labelsSearch"
+        labels = []
+        cursor = None
+
+        query_string, search_params = self.query.build_search_labels_query(
+            query_id=QUERY_ID,
+            project_id=project.id,
+            response_attrs=Label().get_property_names(),
+            filter=filter,
+            cursor=cursor,
+            page_size=page_size
+        )
+
+        response = self.session.execute(query_string, search_params)
+        count, data, cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        for item in data:
+            label = Label(**item)
+            label = self.get_label_info_from_url(label)
+            labels.append(label)
+        return count, labels, cursor
+
+    def search_label_ids(
+        self,
+        project: Project,
+        filter: Optional[SearchFilter] = None,
+        cursor: Optional[str] = None,
+        page_size: int = 10,
+    ):
+        if project.settings.get("allow_advanced_qa", False):
+            raise ParameterException("[ERROR] search_labels function does not support Allow Advanced QA project.")
+        if page_size > 500:
+            raise ParameterException("[ERROR] The page_size must be less than 501")
+
+        QUERY_ID = "labelIDSearch"
+        labels = []
+        cursor = None
+
+        query_string, search_params = self.query.build_search_labels_query(
+            query_id=QUERY_ID,
+            project_id=project.id,
+            response_attrs=['id'],
+            filter=filter,
+            cursor=cursor,
+            page_size=page_size
+        )
+
+        response = self.session.execute(query_string, search_params)
+        count, data, cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        for item in data:
+            label = Label(**item)
+            labels.append(label)
+        return count, labels, cursor
 
     def get_labels(
         self,

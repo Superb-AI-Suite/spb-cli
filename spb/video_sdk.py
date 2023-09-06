@@ -3,7 +3,6 @@ import spb
 import json
 import urllib
 import os
-import skimage.io
 
 from spb.utils.utils import requests_retry_session
 from spb.libs.phy_credit.phy_credit.video import build_label_info
@@ -118,14 +117,14 @@ class VideoDataHandle(object):
         if self._is_expired_video_url():
             return None
 
-        return skimage.io.imread(self.get_frame_url(idx))
+        return self.get_frame_url(idx)
 
     def get_frames(self):
         if self._is_expired_video_url():
             return None
 
         for url in self.get_frame_urls():
-            yield skimage.io.imread(url)
+            yield url
 
     def _get_result(self):
         try:
