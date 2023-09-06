@@ -21,6 +21,16 @@ class Session(BaseSession):
         data = response_json['data'][query_id]
         return data
 
+    def get_count_cursor_data_from_response(self, query_id: str, response):
+        response_json = response.json()
+        self._check_errors(response_json)
+
+        count = response_json['data'][query_id]['count']
+        data = response_json['data'][query_id]['edges']
+        cursor = response_json['data'][query_id]['cursor']
+
+        return (count, data, cursor)
+
     def _check_errors(self, response_json):
         if 'errors' in response_json:
             errors = response_json['errors']

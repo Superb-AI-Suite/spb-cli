@@ -5,27 +5,29 @@ name: Unit Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ develop, master ]
 
 jobs:
-  unit_test:
+  unit_test_python37:
     runs-on: ubuntu-20.04
-
     steps:
     - uses: actions/checkout@v2
-    - uses: dschep/install-pipenv-action@v1
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Install chardet dependency
+    - name: install packages
       run: |
-        pip3 install chardet pytest requests semver scikit-image boto3 natsort
-    - name: Install dependencies
+        pip3 install pytest
+    - name: SPB-CLI Install
       run: |
-        pipenv install --dev --system
+        python setup.py install
+    - name: Version Check
+      run: |
+        python -m spb --version
+        python -m spb describe projects
     - name: Unit test with pytest
       env:
         SPB_ACCESS_KEY: ${{ secrets.SPB_ACCESS_KEY }}
@@ -34,3 +36,54 @@ jobs:
       run: |
         python -m pytest ./tests
 
+  unit_test_python38:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: install packages
+      run: |
+        pip3 install pytest
+    - name: SPB-CLI Install
+      run: |
+        python setup.py install
+    - name: Version Check
+      run: |
+        python -m spb --version
+        python -m spb describe projects
+    - name: Unit test with pytest
+      env:
+        SPB_ACCESS_KEY: ${{ secrets.SPB_ACCESS_KEY }}
+        SPB_TEAM_NAME: ${{ secrets.SPB_ACCOUNT_NAME }}
+        SPB_APP_API_ENDPOINT: https://api.dev.superb-ai.com
+      run: |
+        python -m pytest ./tests
+
+  unit_test_python39:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+    - name: install packages
+      run: |
+        pip3 install pytest
+    - name: SPB-CLI Install
+      run: |
+        python setup.py install
+    - name: Version Check
+      run: |
+        python -m spb --version
+        python -m spb describe projects
+    - name: Unit test with pytest
+      env:
+        SPB_ACCESS_KEY: ${{ secrets.SPB_ACCESS_KEY }}
+        SPB_TEAM_NAME: ${{ secrets.SPB_ACCOUNT_NAME }}
+        SPB_APP_API_ENDPOINT: https://api.dev.superb-ai.com
+      run: |
+        python -m pytest ./tests

@@ -26,20 +26,16 @@ import logging
 import os
 import random
 import time
-import urllib
 import uuid
-from typing import List
+from typing import List, Optional, Dict
 
 import boto3
-import skimage.io
 import spb
 from natsort import natsorted
 
 # from spb.assets.asset import Asset
 # from spb.assets.manager import AssetManager
 from spb.exceptions import (
-    CustomBaseException,
-    NotFoundException,
     NotSupportedException,
     ParameterException,
     PreConditionException,
@@ -53,6 +49,7 @@ from spb.utils.utils import requests_retry_session
 from spb.image_sdk import DataHandle
 from spb.video_sdk import VideoDataHandle
 from spb.pointcloud_sdk import PointcloudDataHandle
+from spb.utils.search_filter import SearchFilter
 
 logger = logging.getLogger()
 
@@ -259,6 +256,53 @@ class Client(object):
             print("[WARNING] Label list is empty.")
 
         return num_data
+
+    def get_num_labels(
+        self,
+        filter: Optional[SearchFilter] = None,
+    ):
+        if self._project is None:
+            raise ParameterException("[ERROR] Project is not described.")
+
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        count = manager.search_labels_count(
+            project=self._project,
+            filter=filter
+        )
+        if count == 0:
+            print("[WARNING] Label list is empty.")
+        return count
+
+    def get_labels(
+        self,
+        filter: Optional[SearchFilter] = None,
+        cursor: Optional[str] = None,
+        page_size: int = 10,
+    ):
+        if self._project is None:
+            raise ParameterException("[ERROR] Project is not described.")
+
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        count, labels, cursor = manager.search_labels(
+            project=self._project,
+            filter=filter,
+            cursor=cursor,
+            page_size=page_size
+        )
+        workapp = self._project.workapp
+        handlers = []
+        for label in labels:
+            if workapp == "video-siesta":
+                handlers.append(VideoDataHandle(label, self._project, self.credential))
+            elif workapp == "pointclouds-siesta":
+                handlers.append(PointcloudDataHandle(label, self._project, self.credential))
+            else:
+                handlers.append(DataHandle(label, self._project, self.credential))
+        return count, handlers, cursor
 
     def get_data_page(
         self,
@@ -556,7 +600,11 @@ class Client(object):
 
         return task_progress
 
-    def request_auto_label_task(self, tags: list = []):
+    def request_auto_label_task(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -564,7 +612,7 @@ class Client(object):
             self.credential["team_name"], self.credential["access_key"]
         )
         auto_label_task_request = manager.request_auto_label_task(
-            project_id=self._project.id, tags=tags
+            project_id=self._project.id, tags=tags, filter=filter
         )
 
         return auto_label_task_request
@@ -572,9 +620,14 @@ class Client(object):
     def assign_reviewer(
         self,
         tags: list = [],
+        filter: Optional[SearchFilter] = None,
         distribution_method: str = "EQUAL",
         work_assignee: list = [],
     ):
+        if filter is None:
+            filter = SearchFilter()
+        temp_filter = SearchFilter()
+        temp_filter.tag_name_all = filter.tag_name_all + tags if isinstance(filter.tag_name_all, list) else tags
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -591,8 +644,8 @@ class Client(object):
         label_manager = LabelManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        limit = label_manager.get_labels_count(
-            project_id=self._project.id, tags=[{"name": tag} for tag in tags]
+        limit = label_manager.search_labels_count(
+            project=self._project, filter=temp_filter
         )
         if limit == 0:
             print(
@@ -605,14 +658,19 @@ class Client(object):
         )
         assign_reviewer_task = manager.assign_reviewer(
             project_id=self._project.id,
-            tags=tags,
+            tags=[],
+            filter=filter,
             limit=limit,
             distribution_method=distribution_method.upper(),
             work_assignee=work_assignee,
         )
         return assign_reviewer_task
 
-    def unassign_reviewer(self, tags: list = []):
+    def unassign_reviewer(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -622,15 +680,21 @@ class Client(object):
         unassign_reviewer_task = manager.unassign_reviewer(
             project_id=self._project.id,
             tags=tags,
+            filter=filter
         )
         return unassign_reviewer_task
 
     def assign_labeler(
         self,
         tags: list = [],
+        filter: Optional[SearchFilter] = None,
         distribution_method: str = "EQUAL",
         work_assignee: list = [],
     ):
+        if filter is None:
+            filter = SearchFilter()
+        temp_filter = SearchFilter()
+        temp_filter.tag_name_all = filter.tag_name_all + tags if isinstance(filter.tag_name_all, list) else tags
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -647,8 +711,8 @@ class Client(object):
         label_manager = LabelManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        limit = label_manager.get_labels_count(
-            project_id=self._project.id, tags=[{"name": tag} for tag in tags]
+        limit = label_manager.search_labels_count(
+            project=self._project, filter=temp_filter
         )
         if limit == 0:
             print(
@@ -662,13 +726,62 @@ class Client(object):
         assign_labeler_task = manager.assign_labeler(
             project_id=self._project.id,
             tags=tags,
+            filter=filter,
             limit=limit,
             distribution_method=distribution_method.upper(),
             work_assignee=work_assignee,
         )
         return assign_labeler_task
 
-    def unassign_labeler(self, tags: list = []):
+    def export_labels(
+            self,
+            export_name: Optional[str] = None,
+            tags: list = [],
+            filter: Optional[SearchFilter] = None,
+            request_custom_auto_label: bool = False,
+            request_transform: bool = False,
+            custom_auto_label_configuration: Optional[Dict[str, str]] = None,
+            transform_configuration: Optional[Dict[str, str]] = None
+    ):
+        """Request export labels
+
+        Args:
+            project_id (string): project id to request
+            export_name (Optional[string]): Export name to be made (default auto generation)
+            tags (List[string]): tag names to be exported of labels
+            request_custom_auto_label (boolean): Request custom auto label with this export
+            request_transform (boolean): Request export transform with this export
+            custom_auto_label_configuration (Optional[Dict[str, str]]):
+                Custom auto label configuration (format : {"name": "CUSTOM_AUTO_LABEL_NAME"})
+            transform_configuration (Optional[Dict[str, str]]):
+                Export transform configuration (format : {"type": "COCO" | "YOLO"})
+
+        Returns:
+            Task: export labels task
+        """
+        if self._project is None:
+            raise ParameterException("[ERROR] Project ID does not exist.")
+
+        manager = TaskManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        export_labels_task = manager.export_labels_task(
+            project=self._project,
+            export_name=export_name,
+            tags=tags,
+            filter=filter,
+            request_custom_auto_label=request_custom_auto_label,
+            request_transform=request_transform,
+            custom_auto_label_configuration=custom_auto_label_configuration,
+            transform_configuration=transform_configuration
+        )
+        return export_labels_task
+
+    def unassign_labeler(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -678,10 +791,15 @@ class Client(object):
         unassign_labeler_task = manager.unassign_labeler(
             project_id=self._project.id,
             tags=tags,
+            filter=filter,
         )
         return unassign_labeler_task
 
-    def initialize_label(self, tags: list = []):
+    def initialize_label(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -689,12 +807,16 @@ class Client(object):
             self.credential["team_name"], self.credential["access_key"]
         )
         initialize_label_task_request = manager.initialize_label(
-            project_id=self._project.id, tags=tags
+            project_id=self._project.id, tags=tags, filter=filter,
         )
 
         return initialize_label_task_request
 
-    def submit_label(self, tags: list = []):
+    def submit_label(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
@@ -702,19 +824,25 @@ class Client(object):
             self.credential["team_name"], self.credential["access_key"]
         )
         submit_label_task_request = manager.submit_label(
-            project_id=self._project.id, tags=tags
+            project_id=self._project.id, tags=tags, filter=filter,
         )
 
         return submit_label_task_request
 
-    def skip_label(self, tags: list = []):
+    def skip_label(
+        self,
+        tags: list = [],
+        filter: Optional[SearchFilter] = None
+    ):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID does not exist.")
 
         manager = TaskManager(
             self.credential["team_name"], self.credential["access_key"]
         )
-        skip_task_request = manager.skip_label(project_id=self._project.id, tags=tags)
+        skip_task_request = manager.skip_label(
+            project_id=self._project.id, tags=tags, filter=filter,
+        )
 
         return skip_task_request
 

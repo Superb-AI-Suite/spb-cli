@@ -1,6 +1,5 @@
 import time
 import urllib
-import skimage.io
 
 from spb.exceptions import (
     ParameterException,
@@ -101,7 +100,7 @@ class DataHandle(object):
         if self._is_expired_image_url():
             return None
 
-        return skimage.io.imread(self._data.data_url)
+        return self._data.data_url
 
     def get_category_labels(self):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
