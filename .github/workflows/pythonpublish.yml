@@ -20,7 +20,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install libdbus-glib-1-dev python-dbus
-        pip install SecretStorage
+        pip install SecretStorage twine
     - name: Build
       run: |
         python setup.py sdist
