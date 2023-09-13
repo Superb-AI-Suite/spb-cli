@@ -92,9 +92,6 @@ class LabelManager(BaseManager):
             raise ParameterException("[ERROR] The page_size must be less than 11")
 
         QUERY_ID = "labelsSearch"
-        labels = []
-        cursor = None
-
         query_string, search_params = self.query.build_search_labels_query(
             query_id=QUERY_ID,
             project_id=project.id,
@@ -105,12 +102,13 @@ class LabelManager(BaseManager):
         )
 
         response = self.session.execute(query_string, search_params)
-        count, data, cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        count, data, next_cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        labels = []
         for item in data:
             label = Label(**item)
             label = self.get_label_info_from_url(label)
             labels.append(label)
-        return count, labels, cursor
+        return count, labels, next_cursor
 
     def search_label_ids(
         self,
@@ -125,9 +123,6 @@ class LabelManager(BaseManager):
             raise ParameterException("[ERROR] The page_size must be less than 501")
 
         QUERY_ID = "labelIDSearch"
-        labels = []
-        cursor = None
-
         query_string, search_params = self.query.build_search_labels_query(
             query_id=QUERY_ID,
             project_id=project.id,
@@ -138,11 +133,12 @@ class LabelManager(BaseManager):
         )
 
         response = self.session.execute(query_string, search_params)
-        count, data, cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        count, data, next_cursor = self.session.get_count_cursor_data_from_response(QUERY_ID, response)
+        labels = []
         for item in data:
             label = Label(**item)
             labels.append(label)
-        return count, labels, cursor
+        return count, labels, next_cursor
 
     def get_labels(
         self,
