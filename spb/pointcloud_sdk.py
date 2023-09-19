@@ -2,39 +2,44 @@ import urllib
 import json
 import os
 
+from typing import Union, Optional, List
+
 
 from spb.image_sdk import DataHandle
 from spb.labels.manager import LabelManager
+from spb.labels.label import Tags
 from spb.exceptions import (
     ParameterException,
     NotSupportedException,
     SDKException
 )
+from spb.users.user import User
+from spb.utils import deprecated
 
 
 class PointcloudDataHandle (DataHandle):
-    
+
     def get_image_url(self):
-        raise NotSupportedException
-    
+        raise NotSupportedException("")
+
     def download_image(self, download_to=None):
-        raise NotSupportedException
-    
+        raise NotSupportedException("")
+
     def get_image(self):
-        raise NotSupportedException
-    
+        raise NotSupportedException("")
+
     def get_category_labels(self):
-        raise NotSupportedException
-    
+        raise NotSupportedException("Does not support describe label category.")
+
     def set_category_labels(self, labels: list = None, category: dict = None, properties=None):
-        raise NotSupportedException
-    
+        raise NotSupportedException("Does not support update label result.")
+
     def set_object_labels(self, labels):
-        raise NotSupportedException
-    
+        raise NotSupportedException("Does not support update label result.")
+
     def add_object_label(self, class_name, annotation, properties=None, id=None):
-        raise NotSupportedException
-    
+        raise NotSupportedException("Does not support update label result.")
+
     def get_data_urls(self):
         if self._is_expired_image_url():
             return None
@@ -114,6 +119,17 @@ class PointcloudDataHandle (DataHandle):
         with open(download_to, 'w') as file:
             file.write(json.dumps(labels, indent=indent))
 
+    def update_tags(self, tags: List[Union[str, Tags]] = []):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_tags(
+            label=self._data,
+            tags=tags
+        )
+        return self._data
+
+    @deprecated("Use [update_tags].")
     def update_data(self):
         manager = LabelManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -121,3 +137,43 @@ class PointcloudDataHandle (DataHandle):
 
         self._data = manager.update_label(label=self._data)
         return True
+
+    def update_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_review_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_review_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_assignee(self, assignee: Optional[Union[User, str]]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_assignee(
+            label=self._data,
+            assignee=assignee
+        )
+        return self._data
+
+    def update_reviewer(self, reviewer: Optional[Union[User, str]]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_reviewer(
+            label=self._data,
+            reviewer=reviewer
+        )
+        return self._data

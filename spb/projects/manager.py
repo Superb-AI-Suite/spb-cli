@@ -8,7 +8,7 @@ from spb.exceptions import PreConditionException, ParameterException, APIFormatE
 from spb.libs.phy_credit.phy_credit.imageV2.project_info import ProjectInfo
 from spb.utils.utils import requests_retry_session
 
-from .project import Project, PointcloudData
+from .project import Project, PointcloudData, Tag
 from .query import Query
 from .session import Session
 
@@ -20,6 +20,21 @@ class ProjectManager(BaseManager):
     def __init__(self, team_name=None, access_key=None):
         self.session = Session(team_name=team_name, access_key=access_key)
         self.query = Query()
+
+    def get_tags(
+        self,
+        project_id: uuid.UUID
+    ) -> (int, List[Tag]):
+        QUERY_ID = "tags"
+        self.query.query_id = QUERY_ID
+        tag = Tag()
+        self.query.response_attrs.extend(tag.get_property_names())
+        query, values = self.query.build_tags_query(project_id)
+        response = self.session.execute(query, values)
+        return self.session.extract_tags(
+            response=response,
+            query_id=QUERY_ID
+        )
 
     def create_project(
         self,

@@ -1,16 +1,28 @@
 from spb.exceptions import SDKException
-from spb.libs.phy_credit.phy_credit.imageV2 import build_label_info
+from spb.libs.phy_credit.phy_credit.imageV2 import build_label_info as image_build_label_info
+from spb.libs.phy_credit.phy_credit.video import build_label_info as video_build_label_info
+from spb.labels.label import WorkappType
 
 
 class LabelInfoBuildParams:
     def __init__(self, **kwargs):
         self._result = kwargs['result'] if 'result' in kwargs else None
         self._label_interface = kwargs['label_interface'] if 'label_interface' in kwargs else None
+        self._workapp = kwargs['workapp'] if 'workapp' in kwargs else WorkappType.IMAGE_SIESTA.value
         self.init_label_info()
 
     def init_label_info(self):
         if self._label_interface is not None:
-            self._label_info = build_label_info(label_interface = self._label_interface, result=self._result)
+            if self._workapp == WorkappType.IMAGE_SIESTA.value:
+                self._label_info = image_build_label_info(
+                    label_interface=self._label_interface,
+                    result=self._result
+                )
+            elif self._workapp == WorkappType.VIDEO_SIESTA.value:
+                self._label_info = video_build_label_info(
+                    label_interface=self._label_interface,
+                    result=self._result
+                )
         else:
             self._label_info = None
 
@@ -41,13 +53,35 @@ class LabelInfoBuildParams:
         if self._label_info is not None:
             self._label_info.init_objects()
 
-    def add_object(self, class_name, annotation, properties=None, id=None):
+    def add_object(self, **kwargs):
         if self._label_info is not None:
-            self._label_info.add_object(class_name=class_name, annotation=annotation, properties=properties, id=id)
+            if self._workapp == WorkappType.IMAGE_SIESTA.value:
+                self._label_info.add_object(
+                    class_name=kwargs["class_name"],
+                    annotation=kwargs["annotation"],
+                    properties=kwargs.get("properties", None),
+                    id=kwargs.get("id", None)
+                )
+            elif self._workapp == WorkappType.VIDEO_SIESTA.value:
+                self._label_info.add_object(
+                    tracking_id=kwargs["tracking_id"],
+                    class_name=kwargs["class_name"],
+                    annotations=kwargs["annotations"],
+                    properties=kwargs.get("properties", None),
+                    id=kwargs.get("id", None)
+                )
 
-    def set_categories(self, properties=None):
+    def set_categories(self, **kwargs):
         if self._label_info is not None:
-            self._label_info.set_categories(properties=properties)
+            if self._workapp == WorkappType.IMAGE_SIESTA.value:
+                self._label_info.set_categories(
+                    properties=kwargs.get("properties", None)
+                )
+            elif self._workapp == WorkappType.VIDEO_SIESTA.value:
+                self._label_info.set_categories(
+                    frames=kwargs.get("frames", None),
+                    properties=kwargs.get("properties", None)
+                )
 
     def build_info(self):
         if self._label_info is None:

@@ -10,6 +10,7 @@ class WorkappType(Enum):
     IMAGE_DEFAULT = 'IMAGE_DEFAULT'
     IMAGE_SIESTA = 'IMAGE_SIESTA'
     POINTCLOUDS_SIESTA = 'POINTCLOUDS_SIESTA'
+    VIDEO_SIESTA = 'VIDEO_SIESTA'
 
 class Stats(AttributeModel):
     def __init__(self, *args, **kwargs):

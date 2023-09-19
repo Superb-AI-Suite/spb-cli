@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 from typing import Dict, List, Tuple
 
 from spb.core.query import BaseQuery
@@ -119,3 +120,21 @@ class Query(BaseQuery):
             self.data_type = data_type
         if annotation_type is not None:
             self.annotation_type = annotation_type
+
+    def build_tags_query(self, project_id: UUID):
+        self.query_string = (
+            "query("
+            "$projectId: String!"
+            ") {"
+            f"{self.query_id}("
+            "projectId: $projectId"
+            ") { count edges { "
+            f"{self._make_response_attrs_message()} "
+            "} }"
+            "}"
+        )
+        values = {
+            "projectId": str(project_id)
+        }
+        self._reset_variables()
+        return self.query_string, values

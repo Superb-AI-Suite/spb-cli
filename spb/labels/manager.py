@@ -1,17 +1,18 @@
 import json
 import logging
 import uuid
-from typing import Optional
+from typing import Optional, Union, List
 
 import requests
 from spb.core.manager import BaseManager
-from spb.exceptions import APIException, ParameterException
+from spb.exceptions import APIException, ParameterException, NotSupportedException
 from spb.labels.serializer import LabelInfoBuildParams
 from spb.utils.utils import requests_retry_session
 from spb.utils.search_filter import SearchFilter
 from spb.projects.project import Project
+from spb.users.user import User
 
-from .label import Label, WorkappType
+from .label import Label, WorkappType, Tags
 from .query import Query
 from .session import Session
 
@@ -106,7 +107,7 @@ class LabelManager(BaseManager):
         labels = []
         for item in data:
             label = Label(**item)
-            label = self.get_label_info_from_url(label)
+            label = self.session.get_label_info_from_url(label)
             labels.append(label)
         return count, labels, next_cursor
 
@@ -184,7 +185,7 @@ class LabelManager(BaseManager):
         labels = []
         for item in data:
             label = Label(**item)
-            label = self.get_label_info_from_url(label)
+            label = self.session.get_label_info_from_url(label)
             labels.append(label)
         return count, labels
 
@@ -209,29 +210,9 @@ class LabelManager(BaseManager):
         if count > 0:
             item = data[0]
             label = Label(**item)
-            label = self.get_label_info_from_url(label)
+            label = self.session.get_label_info_from_url(label)
 
         return label
-
-    def get_label_info_from_url(self, label: Label = None):
-        if label.workapp != WorkappType.IMAGE_SIESTA.value:
-            return label
-        elif label.info_read_presigned_url is None:
-            return label
-
-        try:
-            with requests_retry_session() as session:
-                read_response = session.get(label.info_read_presigned_url)
-            if read_response.status_code == requests.codes.not_found:
-                label.result = None
-                return label
-            read_response.raise_for_status()
-            label.result = read_response.json().get("result", {})
-            return label
-        except:
-            raise APIException(
-                f"[Label Manager] Label result cannot be described from url : {label.info_read_presigned_url}"
-            )
 
     def set_info_with_url(self, label_info: dict, label: Label = None):
         if label.info_write_presigned_url is None:
@@ -271,7 +252,7 @@ class LabelManager(BaseManager):
         labels = []
         for item in data:
             label = Label(**item)
-            label = self.get_label_info_from_url(label)
+            label = self.session.get_label_info_from_url(label)
             labels.append(label)
         return count, labels
 
@@ -294,7 +275,10 @@ class LabelManager(BaseManager):
                 label_info = info_build_params.build_info()
             else:
                 label_info = label.result
-            result = {"tags": label_info.get("tags", None)}
+
+            result = {
+                "tags": label_info.get["tags"]
+            } if "tags" in label_info.keys() else None
             attribute_maps.update({label.get_attribute_type("result"): result})
         elif label.workapp == WorkappType.POINTCLOUDS_SIESTA.value:
             pass
@@ -325,3 +309,145 @@ class LabelManager(BaseManager):
 
     def delete_label(self):
         pass
+
+    def update_info(
+            self,
+            label: Label,
+            info_build_params: LabelInfoBuildParams = None
+    ):
+        QUERY_ID = "updateLabelInfo"
+        self.query.query_id = QUERY_ID
+        self.query.response_attrs.extend(label.get_property_names())
+
+        if label.workapp in [
+            WorkappType.IMAGE_SIESTA.value,
+            WorkappType.VIDEO_SIESTA.value
+        ]:
+            if info_build_params is not None:
+                label_info = info_build_params.build_info()
+            else:
+                label_info = label.result
+            result = {
+                "tags": label_info["tags"]
+            } if "tags" in label_info.keys() else None
+        else:
+            raise NotSupportedException(
+                "This project does not support [label info update]."
+            )
+        try:
+            query, values = self.query.build_update_info_query(
+                project_id=str(label.project_id),
+                id=str(label.id),
+                result=result
+            )
+            response = self.session.execute(query, values)
+        except Exception as e:
+            raise e
+
+        self.set_info_with_url(
+            label_info=label_info,
+            label=label
+        )
+        updated_label = self.session.build_label_from_response(QUERY_ID, response)
+        return updated_label
+
+    def update_tags(self, label: Label, tags: List[Union[str, Tags]]):
+        QUERY_ID = "updateLabelTags"
+        self.query.query_id = QUERY_ID
+        generated_tags = []
+        for tag in tags:
+            if isinstance(tag, str):
+                generated_tags.append(Tags(name=tag))
+            else:
+                generated_tags.append(tag)
+        self.query.response_attrs.extend(label.get_property_names())
+        try:
+            query, values = self.query.build_update_tags_query(
+                project_id=str(label.project_id),
+                id=str(label.id),
+                tags=generated_tags
+            )
+            response = self.session.execute(query, values)
+        except Exception as e:
+            raise e
+        return self.session.build_label_from_response(QUERY_ID, response)
+
+    def update_status(self, label: Label, status: str):
+        QUERY_ID = "updateLabelStatus"
+        self.query.query_id = QUERY_ID
+        if status not in ["WORKING", "SUBMITTED", "SKIPPED"]:
+            raise ParameterException((
+                f"The status {status} is not supported."
+                " The status can only be changed to ['WORKING', 'SUBMITTED', 'SKIPPED']."
+            ))
+        self.query.response_attrs.extend(label.get_property_names())
+        query, values = self.query.build_update_status_query(
+            project_id=str(label.project_id),
+            id=str(label.id),
+            status=status
+        )
+        response = self.session.execute(
+            query, values
+        )
+        return self.session.build_label_from_response(QUERY_ID, response)
+
+    def update_review_status(self, label: Label, status: str):
+        QUERY_ID = "updateLabelReviewStatus"
+        self.query.query_id = QUERY_ID
+        if status not in ["APPROVE", "REJECT"]:
+            raise ParameterException((
+                f"The status {status} is not supported."
+                " The status can only be changed to ['APPROVE', 'REJECT']."
+            ))
+        self.query.response_attrs.extend(label.get_property_names())
+        query, values = self.query.build_update_status_query(
+            project_id=str(label.project_id),
+            id=str(label.id),
+            status=status
+        )
+        response = self.session.execute(
+            query, values
+        )
+        return self.session.build_label_from_response(QUERY_ID, response)
+
+    def update_assignee(
+        self,
+        label: Label,
+        assignee: Optional[Union[User, str]] = None
+    ):
+        QUERY_ID = "updateLabelAssignee"
+        self.query.query_id = QUERY_ID
+
+        if isinstance(assignee, str):
+            assignee = User(email=assignee)
+        self.query.response_attrs.extend(label.get_property_names())
+        query, values = self.query.build_update_assignee_query(
+            project_id=str(label.project_id),
+            id=str(label.id),
+            assignee=assignee.email if assignee is not None else None
+        )
+        response = self.session.execute(
+            query, values
+        )
+        return self.session.build_label_from_response(QUERY_ID, response)
+
+    def update_reviewer(
+        self,
+        label: Label,
+        reviewer: Optional[Union[User, str]] = None
+    ):
+        QUERY_ID = "updateLabelReviewer"
+        self.query.query_id = QUERY_ID
+
+        if isinstance(reviewer, str):
+            reviewer = User(email=reviewer)
+        self.query.response_attrs.extend(label.get_property_names())
+        query, values = self.query.build_update_reviewer_query(
+            project_id=str(label.project_id),
+            id=str(label.id),
+            reviewer=reviewer.email if reviewer is not None else None
+        )
+        response = self.session.execute(
+            query, values
+        )
+        return self.session.build_label_from_response(QUERY_ID, response)

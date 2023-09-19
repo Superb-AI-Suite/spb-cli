@@ -1,13 +1,16 @@
 import time
 import urllib
 
+from typing import Union, Optional, List
+
 from spb.exceptions import (
     ParameterException,
-    NotSupportedException,
 )
 from spb.labels.serializer import LabelInfoBuildParams
 from spb.labels.label import WorkappType, Tags
 from spb.labels.manager import LabelManager
+from spb.users.user import User
+from spb.utils import deprecated
 
 
 class DataHandle(object):
@@ -18,10 +21,9 @@ class DataHandle(object):
         self.credential = credential
         if data.project_id is None or data.id is None:
             raise ParameterException(f"[ERROR] Data Handler cannot be initiated.")
-        self._data = data
         self._project = project
+        self._data=data
         self._created = time.time()
-
         self._init_label_build_info()
 
     def _init_label_build_info(self):
@@ -66,6 +68,9 @@ class DataHandle(object):
 
     def get_status(self):
         return self._data.status
+
+    def get_review_status(self):
+        return self._data.last_review_action
 
     def get_last_review_action(self):
         return self._data.last_review_action
@@ -192,10 +197,16 @@ class DataHandle(object):
 
     def add_object_label(self, class_name, annotation, properties=None, id=None):
         if self._data.workapp == WorkappType.IMAGE_SIESTA.value:
-            self._label_build_params.add_object(class_name, annotation, properties, id)
+            self._label_build_params.add_object(
+                class_name=class_name,
+                annotation=annotation,
+                properties=properties,
+                id=id
+            )
         elif self._data.workapp == WorkappType.IMAGE_DEFAULT.value:
             print("[ERROR] add_object_list doesn't support.")
 
+    @deprecated("Use [update_info] or [update_tags]")
     def update_data(self):
         manager = LabelManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -213,6 +224,23 @@ class DataHandle(object):
 
         return True
 
+    def update_info(self):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        build_params = (
+            self._label_build_params
+            if self._data.workapp == WorkappType.IMAGE_SIESTA.value
+            else None
+        )
+        self._data = manager.update_info(
+            label=self._data, info_build_params=build_params
+        )
+        if build_params is not None:
+            self._init_label_build_info()
+        return self._data
+
+    @deprecated("Use [update_tags].")
     def set_tags(self, tags: list = None):
         label_tags = []
         if tags is not None and isinstance(tags, list):
@@ -220,3 +248,53 @@ class DataHandle(object):
                 label_tags.append(Tags(name=tag))
 
         self._data.tags = label_tags
+
+    def update_tags(self, tags: List[Union[str, Tags]] = []):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_tags(
+            label=self._data,
+            tags=tags
+        )
+        return self._data
+
+    def update_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_review_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_review_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_assignee(self, assignee: Optional[Union[User, str]]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_assignee(
+            label=self._data,
+            assignee=assignee
+        )
+        return self._data
+
+    def update_reviewer(self, reviewer: Optional[Union[User, str]]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_reviewer(
+            label=self._data,
+            reviewer=reviewer
+        )
+        return self._data
