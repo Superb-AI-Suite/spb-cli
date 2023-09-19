@@ -3,7 +3,7 @@ import os
 from spb.core.session import BaseSession
 from spb.exceptions import APIFormatException
 
-from .project import Project
+from .project import Project, Tag
 
 
 class Session(BaseSession):
@@ -41,6 +41,15 @@ class Session(BaseSession):
         self._check_errors(response_json)
         data = response_json["data"][query_id]
         return data
+
+    def extract_tags(self, response, query_id):
+        response_json = response.json()
+        self._check_errors(response_json)
+
+        count = response_json['data'][query_id]['count']
+        data = response_json['data'][query_id]['edges']
+
+        return (count, [Tag(**item) for item in data])
 
     def _check_errors(self, response_json):
         if "errors" in response_json:

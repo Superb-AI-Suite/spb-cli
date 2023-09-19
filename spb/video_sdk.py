@@ -4,12 +4,18 @@ import json
 import urllib
 import os
 
+from typing import Union, List
+
 from spb.utils.utils import requests_retry_session
 from spb.libs.phy_credit.phy_credit.video import build_label_info
 from spb.exceptions import (
     NotSupportedException,
 )
-
+from spb.labels.manager import LabelManager
+from spb.users.user import User
+from spb.utils import deprecated
+from spb.labels.label import Tags
+from spb.labels.serializer import LabelInfoBuildParams
 
 
 class VideoDataHandle(object):
@@ -22,6 +28,7 @@ class VideoDataHandle(object):
         self._project = project
         self._info = None
         self._created = time.time()
+        self._init_label_build_info()
 
     def _is_expired_video_url(self):
         is_expired = time.time() - self._created > self._VIDEO_URL_LIFETIME_IN_SECONDS
@@ -44,6 +51,14 @@ class VideoDataHandle(object):
                 optional={"info": json.dumps(info)},
             )
 
+    def _init_label_build_info(self):
+        self._data.result = self._get_result()
+        self._label_build_params = LabelInfoBuildParams(
+            label_interface=self._project.label_interface,
+            result=self._data.result,
+            workapp=self._data.workapp,
+        )
+
     ##############################
     # Immutable variables
     ##############################
@@ -63,6 +78,9 @@ class VideoDataHandle(object):
 
     def get_status(self):
         return self._data.status
+    
+    def get_review_status(self):
+        return self._data.last_review_action
 
     def get_last_review_action(self):
         return self._data.last_review_action
@@ -125,6 +143,9 @@ class VideoDataHandle(object):
 
         for url in self.get_frame_urls():
             yield url
+    
+    def get_tags(self):
+        return [tag.name for tag in self._data.tags]
 
     def _get_result(self):
         try:
@@ -135,46 +156,46 @@ class VideoDataHandle(object):
             return label_result["result"]
         except:
             return None
-
+        
     def set_object_labels(self, labels):
-        result = self._get_result()
-        if result is None:
-            label_info = build_label_info(self._project.label_interface)
-        else:
-            label_info = build_label_info(self._project.label_interface, result=result)
-            label_info.init_objects()
-
+        self._label_build_params.init_objects()
         for label in labels:
-            label_info.add_object(**label)
-        info = label_info.build_info()
+            self._label_build_params.add_object(**label)
+        info = self._label_build_params.build_info()
         self._info = info
+        objects = []
+        if "result" in info and "objects" in info["result"]:
+            objects = info["result"]["objects"]
+        # apply
+        self._data.result = {
+            **(self._data.result or {}),
+            "objects": objects,
+        }
 
     def get_object_labels(self):
-        result = self._get_result()
-        if result is None:
-            return None
-        label_info = build_label_info(self._project.label_interface, result=result)
-        return label_info.get_objects()
+        try:
+            labels = self._label_build_params.get_objects()
+        except:
+            labels = []
+        return labels
 
     def set_category_labels(self, label):
-        result = self._get_result()
-        if result is None:
-            label_info = build_label_info(self._project.label_interface)
-        else:
-            label_info = build_label_info(self._project.label_interface, result=result)
-            label_info.init_categories()
-
-        label_info.set_categories(**label)
-        info = label_info.build_info()
+        self._label_build_params.set_categories(**label)
+        info = self._label_build_params.build_info()
         self._info = info
+        categories = {"properties": []}
+        if "result" in info and "categories" in info["result"]:
+            categories = info["result"]["categories"]
+        # apply
+        self._data.result = {
+            **(self._data.result or {}),
+            "categories": categories,
+        }
 
     def get_category_labels(self):
-        result = self._get_result()
-        if result is None:
-            return None
-        label_info = build_label_info(self._project.label_interface, result=result)
-        return label_info.get_categories()
+        return self._label_build_params.get_categories()
 
+    @deprecated("Use [update_info] or [update_tag]")
     def update_data(self):
         self._upload_to_suite(info={"tags": self._info["tags"]})
         with requests_retry_session() as session:
@@ -184,8 +205,71 @@ class VideoDataHandle(object):
             )
         return True
 
-    def get_tags(self):
-        return [tag.name for tag in self._data.tags]
+    def update_info(self):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_info(
+            label=self._data, info_build_params=self._label_build_params
+        )
+        if self._label_build_params is not None:
+            self._init_label_build_info()
+        return self._data
 
+    @deprecated("Use [update_tags].")
     def set_tags(self, tags: list = None):
         raise NotSupportedException("[ERROR] Video does not supported.")
+
+    def update_tags(self, tags: List[Union[str, Tags]] = []):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_tags(
+            label=self._data,
+            tags=tags
+        )
+        return self._data
+
+    def update_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_review_status(self, status: str):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        self._data = manager.update_review_status(
+            label=self._data,
+            status=status
+        )
+        return self._data
+
+    def update_assignee(self, assignee: Union[str, User]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        if isinstance(assignee, str):
+            assignee = User(email=assignee)
+        self._data = manager.update_assignee(
+            label=self._data,
+            assignee=assignee
+        )
+        return self._data
+
+    def update_reviewer(self, reviewer: Union[str, User]):
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        if isinstance(reviewer, str):
+            reviewer = User(email=reviewer)
+        self._data = manager.update_reviewer(
+            label=self._data,
+            reviewer=reviewer
+        )
+        return self._data

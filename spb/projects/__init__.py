@@ -1,5 +1,6 @@
-from .project import Project
+from .project import Project, Tag
 
 __all__ = (
-    'Project'
+    'Project',
+    'Tag'
 )

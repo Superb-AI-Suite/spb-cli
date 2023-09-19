@@ -95,3 +95,8 @@ class Project(Model):
             },
         }
         return _stats
+
+
+class Tag(Model):
+    id = ID(property_name="id", default_value=uuid.uuid4())
+    name = String(property_name="name")

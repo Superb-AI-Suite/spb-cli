@@ -42,7 +42,7 @@ from spb.exceptions import (
 )
 from spb.exports.manager import ExportManager
 from spb.labels.manager import LabelManager
-from spb.projects import Project
+from spb.projects import Project, Tag
 from spb.projects.manager import ProjectManager
 from spb.tasks.manager import TaskManager
 from spb.utils.utils import requests_retry_session
@@ -50,6 +50,8 @@ from spb.image_sdk import DataHandle
 from spb.video_sdk import VideoDataHandle
 from spb.pointcloud_sdk import PointcloudDataHandle
 from spb.utils.search_filter import SearchFilter
+from spb.users.manager import UserManager
+from spb.users import User
 
 logger = logging.getLogger()
 
@@ -224,6 +226,22 @@ class Client(object):
         else:
             raise ParameterException(f"[ERROR] Project name or id should be described.")
         print(f"[INFO] Delete project success {id}.")
+
+    def get_project_users(self) -> (int, List[User]):
+        user_manager = UserManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        return user_manager.get_project_users(
+            project_id=self._project.id
+        )
+    
+    def get_project_tags(self) -> (int, List[Tag]):
+        projects = ProjectManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        return projects.get_tags(
+            project_id=self._project.id
+        )
 
     @property
     def project(self):

@@ -176,6 +176,9 @@ class BaseQuery(object):
                 "Invalid attribute exceptions: response must be set of string"
             )
 
+    def _make_response_attrs_message(self) -> str:
+        return " ".join(self.response_attrs)
+
     @property
     def query_id(self):
         return self._query_id
