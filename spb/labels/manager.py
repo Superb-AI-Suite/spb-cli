@@ -344,11 +344,11 @@ class LabelManager(BaseManager):
         except Exception as e:
             raise e
 
+        updated_label = self.session.build_label_from_response(QUERY_ID, response)
         self.set_info_with_url(
             label_info=label_info,
-            label=label
+            label=updated_label
         )
-        updated_label = self.session.build_label_from_response(QUERY_ID, response)
         return updated_label
 
     def update_tags(self, label: Label, tags: List[Union[str, Tags]]):
