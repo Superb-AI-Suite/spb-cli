@@ -275,9 +275,8 @@ class LabelManager(BaseManager):
                 label_info = info_build_params.build_info()
             else:
                 label_info = label.result
-
             result = {
-                "tags": label_info.get["tags"]
+                "tags": label_info.get("tags")
             } if "tags" in label_info.keys() else None
             attribute_maps.update({label.get_attribute_type("result"): result})
         elif label.workapp == WorkappType.POINTCLOUDS_SIESTA.value:
