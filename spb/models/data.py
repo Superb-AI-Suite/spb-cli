@@ -12,6 +12,7 @@ class Data(Model):
     RESOURCE_NAME = 'asset'
 
     id = ID(property_name='id', immutable=True, filterable=True)
+    label_id = ID(property_name="labelId", immutable=True)
     file = String(property_name='file')
     file_name = String(property_name='fileName')
     file_size = Number(property_name='fileSize')
