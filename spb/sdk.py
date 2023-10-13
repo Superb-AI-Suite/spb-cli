@@ -443,11 +443,12 @@ class Client(object):
             optional={"projectId": self._project.id},
             option=option,
         )
+        
         presigned_url = result.presigned_url
         data = open(path, "rb").read()
         with requests_retry_session() as session:
             response = session.put(presigned_url, data=data)
-        return True
+        return result
 
     def upload_image_s3(self, bucket_name, path, dataset_name, key=None):
         if self._project is None:
@@ -507,7 +508,7 @@ class Client(object):
             data = open(file_path, "rb").read()
             with requests_retry_session() as session:
                 response = session.put(file_info["presigned_url"], data=data)
-        return True
+        return result
     
 
     def upload_pointcloud_data(self, manifest_file_path:str, dataset_name:str, data_key:str = None, manifest_file_name:str =None):

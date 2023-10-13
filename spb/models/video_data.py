@@ -9,6 +9,7 @@ class VideoData(Model):
     RESOURCE_NAME = 'video_asset'
 
     id = ID(property_name='id', immutable=True, filterable=True)
+    label_id = ID(property_name="labelId", immutable=True)
     file_infos = String(property_name='fileInfos')
     dataset = String(property_name='dataset')
     data_key = String(property_name='dataKey')
