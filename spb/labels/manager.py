@@ -340,13 +340,14 @@ class LabelManager(BaseManager):
                 result=result
             )
             response = self.session.execute(query, values)
+            self.set_info_with_url(
+                label_info=label_info,
+                label=label
+            )
         except Exception as e:
             raise e
-
-        updated_label = self.session.build_label_from_response(QUERY_ID, response)
-        self.set_info_with_url(
-            label_info=label_info,
-            label=updated_label
+        updated_label = self.session.build_label_from_response(
+            QUERY_ID, response
         )
         return updated_label
 
