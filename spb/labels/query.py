@@ -97,7 +97,7 @@ class Query(BaseQuery):
         values = {
             "projectId": project_id,
             "id": id,
-            "tags": result
+            "result": result
         }
         self._reset_variables()
         return self.query_string, values
