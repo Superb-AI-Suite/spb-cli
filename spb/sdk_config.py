@@ -1,6 +1,6 @@
 SDK_NAME='spb-cli'
 SDK_AUTHOR='Superb AI Dev Team'
-SDK_VERSION='0.17.3'
+SDK_VERSION='0.17.4'
 SDK_AUTHOR_EMAIL='support@superb-ai.com'
 SDK_DESCRIPTION='Suite Standard Library'
 SDK_LICENSE='MIT'

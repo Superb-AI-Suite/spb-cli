@@ -203,8 +203,16 @@ class DataHandle(object):
                 properties=properties,
                 id=id
             )
+            info = self._label_build_params.build_info()
+            objects = []
+            if "result" in info and "objects" in info["result"]:
+                objects = info["result"]["objects"]
+            self._data.result = {
+                **(self._data.result or {}),
+                "objects": objects,
+            }
         elif self._data.workapp == WorkappType.IMAGE_DEFAULT.value:
-            print("[ERROR] add_object_list doesn't support.")
+            print("[ERROR] add_object_label doesn't support.")
 
     @deprecated("Use [update_info] or [update_tags]")
     def update_data(self):
@@ -236,8 +244,7 @@ class DataHandle(object):
         self._data = manager.update_info(
             label=self._data, info_build_params=build_params
         )
-        if build_params is not None:
-            self._init_label_build_info()
+        self._init_label_build_info()
         return self._data
 
     @deprecated("Use [update_tags].")
