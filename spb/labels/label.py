@@ -58,7 +58,7 @@ class Label(Model):
     last_updated_at = String(property_name='lastUpdatedAt')
     info_last_updated_by = String(property_name='infoLastUpdatedBy')
     last_reviewed_at = String(property_name='lastReviewedAt')
-    
+
 
     def to_json(self, include_project=True, include_data=True):
         label = {

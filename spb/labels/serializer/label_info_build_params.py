@@ -9,6 +9,7 @@ class LabelInfoBuildParams:
         self._result = kwargs['result'] if 'result' in kwargs else None
         self._label_interface = kwargs['label_interface'] if 'label_interface' in kwargs else None
         self._workapp = kwargs['workapp'] if 'workapp' in kwargs else WorkappType.IMAGE_SIESTA.value
+        self._label_info = None
         self.init_label_info()
 
     def init_label_info(self):

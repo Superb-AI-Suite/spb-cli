@@ -2,18 +2,13 @@ import urllib
 import json
 import os
 
-from typing import Union, Optional, List
-
-
 from spb.image_sdk import DataHandle
 from spb.labels.manager import LabelManager
-from spb.labels.label import Tags
 from spb.exceptions import (
     ParameterException,
     NotSupportedException,
     SDKException
 )
-from spb.users.user import User
 from spb.utils import deprecated
 
 
@@ -41,7 +36,8 @@ class PointcloudDataHandle (DataHandle):
         raise NotSupportedException("Does not support update label result.")
 
     def get_data_urls(self):
-        if self._is_expired_image_url():
+        self._describe_data_detail()
+        if self._is_expired_url():
             return None
         if self._data.data_url is None:
             return None
@@ -78,6 +74,7 @@ class PointcloudDataHandle (DataHandle):
         return result
     
     def download_data(self, download_to="./"):
+        self._describe_data_detail()
         # Validation
         if download_to is None:
             raise ParameterException("[ERROR] download_to must been specified.")
@@ -96,7 +93,8 @@ class PointcloudDataHandle (DataHandle):
         return True
     
     def get_object_labels(self):
-        if self._is_expired_image_url():
+        self._describe_data_detail()
+        if self._is_expired_url():
             return None
         
         info_url = self.data.info_read_presigned_url
@@ -110,6 +108,7 @@ class PointcloudDataHandle (DataHandle):
         return json.loads(data.decode(encoding))
 
     def download_object_labels(self, download_to, indent=None):
+        self._describe_data_detail()
         if not isinstance(download_to, str):
             raise ParameterException("[ERROR] 'download_to' must be a string.")
         labels = self.get_object_labels()
@@ -119,16 +118,6 @@ class PointcloudDataHandle (DataHandle):
         with open(download_to, 'w') as file:
             file.write(json.dumps(labels, indent=indent))
 
-    def update_tags(self, tags: List[Union[str, Tags]] = []):
-        manager = LabelManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        self._data = manager.update_tags(
-            label=self._data,
-            tags=tags
-        )
-        return self._data
-
     @deprecated("Use [update_tags].")
     def update_data(self):
         manager = LabelManager(
@@ -136,44 +125,8 @@ class PointcloudDataHandle (DataHandle):
         )
 
         self._data = manager.update_label(label=self._data)
+        self.label_id_only = False
         return True
 
-    def update_status(self, status: str):
-        manager = LabelManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        self._data = manager.update_status(
-            label=self._data,
-            status=status
-        )
-        return self._data
-
-    def update_review_status(self, status: str):
-        manager = LabelManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        self._data = manager.update_review_status(
-            label=self._data,
-            status=status
-        )
-        return self._data
-
-    def update_assignee(self, assignee: Optional[Union[User, str]]):
-        manager = LabelManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        self._data = manager.update_assignee(
-            label=self._data,
-            assignee=assignee
-        )
-        return self._data
-
-    def update_reviewer(self, reviewer: Optional[Union[User, str]]):
-        manager = LabelManager(
-            self.credential["team_name"], self.credential["access_key"]
-        )
-        self._data = manager.update_reviewer(
-            label=self._data,
-            reviewer=reviewer
-        )
-        return self._data
+    def update_info(self):
+        raise NotSupportedException("Does not support update info.")

@@ -27,7 +27,7 @@ import os
 import random
 import time
 import uuid
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 import boto3
 import spb
@@ -42,6 +42,7 @@ from spb.exceptions import (
 )
 from spb.exports.manager import ExportManager
 from spb.labels.manager import LabelManager
+from spb.labels.label import Label, WorkappType
 from spb.projects import Project, Tag
 from spb.projects.manager import ProjectManager
 from spb.tasks.manager import TaskManager
@@ -321,6 +322,67 @@ class Client(object):
             else:
                 handlers.append(DataHandle(label, self._project, self.credential))
         return count, handlers, cursor
+    
+    def get_label_ids(
+        self,
+        filter: Optional[SearchFilter] = None,
+        cursor: Optional[str] = None,
+        page_size: int = 100,
+    ):
+        if self._project is None:
+            raise ParameterException("[ERROR] Project is not described.")
+        manager = LabelManager(
+            self.credential["team_name"], self.credential["access_key"]
+        )
+        count, labels, cursor = manager.search_label_ids(
+            project=self._project,
+            filter=filter,
+            cursor=cursor,
+            page_size=page_size
+        )
+        handlers = []
+        for label in labels:
+            handlers.append(self.build_data_handle(label_id=label.id))
+        return count, handlers, cursor
+
+    def build_data_handle(self, label_id: Union[uuid.UUID, str]):
+        """
+        Build data handle from label id
+        :param label_id: label id
+        :return: data handle (DataHandle, VideoDataHandle, PointcloudDataHandle)
+        """
+        if self._project is None:
+            raise ParameterException("[ERROR] Project is not described.")
+        label = Label(
+            id=label_id if isinstance(label_id, uuid.UUID) else uuid.UUID(label_id),
+            project_id=self._project.id,
+        )
+        if self._project.workapp == "image-siesta":
+            label.workapp = WorkappType.IMAGE_SIESTA.value
+            return DataHandle(
+                data=label,
+                project=self._project,
+                credential=self.credential,
+                label_id_only=True,
+            )
+        elif self._project.workapp == "video-siesta":
+            label.workapp = WorkappType.VIDEO_SIESTA.value
+            return VideoDataHandle(
+                data=label,
+                project=self._project,
+                credential=self.credential,
+                label_id_only=True,
+            )
+        elif self._project.workapp == "pointclouds-siesta":
+            label.workapp = WorkappType.POINTCLOUDS_SIESTA.value
+            return PointcloudDataHandle(
+                data=label,
+                project=self._project,
+                credential=self.credential,
+                label_id_only=True
+            )
+        else:
+            raise NotSupportedException(f"[ERROR] {label.workapp} is not supported.")
 
     def get_data_page(
         self,
