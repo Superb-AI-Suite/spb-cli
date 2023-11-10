@@ -340,15 +340,15 @@ class LabelManager(BaseManager):
                 result=result
             )
             response = self.session.execute(query, values)
+            data = self.session.get_data_from_mutation(response, QUERY_ID)
+            updated_label = Label(**data)
             self.set_info_with_url(
                 label_info=label_info,
-                label=label
+                label=updated_label
             )
+            updated_label = self.session.get_label_info_from_url(updated_label)
         except Exception as e:
             raise e
-        updated_label = self.session.build_label_from_response(
-            QUERY_ID, response
-        )
         return updated_label
 
     def update_tags(self, label: Label, tags: List[Union[str, Tags]]):
