@@ -44,6 +44,10 @@ class SearchFilter:
     reviewer_none_of: Optional[List[str]] = None
     reviewer_exists: Optional[bool] = None
 
+    # Review Round Filter
+    review_round_gte: Optional[int] = None
+    review_round_lte: Optional[int] = None
+
     # Tag filter
     tag_name_all: Optional[List[str]] = None
     tag_contains_all_of: Optional[List[str]] = None
@@ -113,6 +117,10 @@ class SearchFilter:
                 filters += ["is_reviewer_unassigned=true"] if not self.reviewer_exists else []
             else:
                 filters += ["reviewer_exists=true"] if not self.reviewer_exists else []
+        if self.review_round_lte is not None:
+            filters += [f"review_round_lte={self.review_round_lte}"]
+        if self.review_round_gte is not None:
+            filters += [f"review_round_gte={self.review_round_gte}"]
         if self.tag_name_all is not None:
             filters += [f"tags_name_all[]={s}" for s in self.tag_name_all]
         if self.tag_contains_all_of is not None:
@@ -210,6 +218,21 @@ class SearchFilter:
                 status = status.value if isinstance(status, ReviewStatus) else status
                 if status not in [e.value for e in ReviewStatus]:
                     raise ParameterException(f"[ERROR] The [review_is_any_one_of] must be in {[e.value for e in ReviewStatus]}")
+        
+        # Review Round Validation
+        if self.review_round_gte is not None:
+            if not isinstance(self.review_round_gte, int):
+                raise ParameterException("[ERROR] The [review_round_gte] must be integer")
+            if self.review_round_gte < 0:
+                raise ParameterException("[ERROR] The [review_round_gte] must be greater than or equal to 0")
+        if self.review_round_lte is not None:
+            if not isinstance(self.review_round_lte, int):
+                raise ParameterException("[ERROR] The [review_round_lte] must be integer")
+            if self.review_round_lte < 0:
+                raise ParameterException("[ERROR] The [review_round_lte] must be greater than or equal to 0")
+        if self.review_round_lte is not None and self.review_round_gte is not None:
+            if self.review_round_lte < self.review_round_gte:
+                raise ParameterException("[ERROR] The [review_round_lte] must be greater than or equal to [review_round_gte]")
 
         if self.assignee_is_any_one_of is not None:
             try:
