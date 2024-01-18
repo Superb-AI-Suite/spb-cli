@@ -57,7 +57,7 @@ setup(
         "readme-renderer==26.0",
         "requests>=2.31.0,<3.0.0",
         "rich==10.2.2",
-        "typing-extensions<4.0.0,>=3.7.4",
+        "typing-extensions<4.9.0,>=3.7.4",
         "six==1.15.0",
         "tqdm==4.46.1",
         "botocore>=1.20.82",
