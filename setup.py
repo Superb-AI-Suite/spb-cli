@@ -51,7 +51,7 @@ setup(
         "idna==2.9",
         "importlib-metadata<=7.0.1, >=3.6; python_version < '3.9'",
         "keyring==21.2.1",
-        "packaging==20.4",
+        "packaging<=23.2",
         "pkginfo==1.5.0.1",
         "pprintpp==0.4.0",
         "readme-renderer==26.0",
