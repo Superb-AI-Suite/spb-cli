@@ -12,6 +12,7 @@ from .property import PropertyDef, PropertyOptionsDef, PropertyOptionsItemDef
 def build_label_info(label_interface, result=None):
     if type(label_interface) is dict:
         label_interface = LabelInterface.from_dict(label_interface)
+
     if is_camel_version(label_interface):
         return LegacyLabelInfo(label_interface, result)
     return LabelInfo(label_interface, result)

@@ -1,5 +1,10 @@
 import random
 from uuid import uuid4
+from typing import Optional, List, Union
+
+from ..common.label import ClassType
+from .utils import is_sublist
+from .deprecated import deprecated
 
 
 class ObjectInterfaceDef:
@@ -33,7 +38,9 @@ class ObjectInterfaceDef:
             annotation_types=object_detection_dict["annotation_types"],
         )
 
+    @deprecated("Use [set_object_group] instead")
     def add_object_group(self, name: str, groups: list, id: str = None):
+        # TODO: How to use this method? MinjuneL
         id = str(uuid4()) if id is None else id
         new_group = {"id": id, "name": name, "object_class_ids": []}
         for object in self.object_classes:
@@ -44,6 +51,58 @@ class ObjectInterfaceDef:
             return print(f"[ERROR] {groups} does not exist")
         self.object_groups.append(new_group)
 
+    def set_object_group(
+        self,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        groups: List[dict] = []
+    ):
+        # Validation
+        for group in groups:
+            if not is_sublist(
+                ["id", "name", "annotation_type"],
+                group.keys(),
+            ):
+                raise Exception(
+                    "Invalid group format. {`id`, `name`, `annotation_type`} are required.")
+
+        id = str(uuid4()) if id is None else id
+        index = None
+        for index, item in enumerate(self.object_groups):
+            if name is not None and item["name"] == name:
+                index = index
+                break
+            elif item["id"] == id:
+                index = index
+                break
+        if name is None and index is None:
+            raise Exception("Provide name if you want to make new group.")
+
+        # Build new group
+        new_group = {"id": id, "name": name, "object_class_ids": [
+            group["id"] for group in groups]}
+
+        # Set group
+        if index is None:
+            self.object_groups.append(new_group)
+        else:
+            self.object_groups[index] = new_group
+
+    def get_object_class(
+        self,
+        name: str,
+        annotation_type: Union[ClassType, str],
+    ) -> Optional[dict]:
+        if isinstance(annotation_type, ClassType):
+            annotation_type = annotation_type.value
+        for object in self.object_classes:
+            if (
+                object["name"] == name and
+                object["annotation_type"] == annotation_type
+            ):
+                return object
+        return None
+
     def add_object_class(
         self,
         name: str,
@@ -53,8 +112,11 @@ class ObjectInterfaceDef:
         id: str = None,
     ):
         for object in self.object_classes:
-            if object["name"] == name:
-                return print(f"[ERROR] {name} already exists")
+            if (
+                object["name"] == name and
+                object["annotation_type"] == annotation_type
+            ):
+                return print(f"[ERROR] {name} of {annotation_type} already exists")
         id = str(uuid4()) if id is None else id
 
         def r():
@@ -129,10 +191,13 @@ class ObjectInterfaceDef:
         id: str = None,
     ):
         for object in self.object_classes:
-            if object["name"] == name:
-                return print(f"[ERROR] {name} already exists")
+            if (
+                object["name"] == name and
+                object["annotation_type"] == "keypoint"
+            ):
+                return print(f"[ERROR] {name} of keypoint already exists")
         template_exists = False
-        if keypoint_template == None:
+        if keypoint_template is None:
             current_keypoints = self.keypoints
             if len(current_keypoints) == 0:
                 return print(
@@ -170,10 +235,26 @@ class ObjectInterfaceDef:
         if not "keypoint" in self.annotation_types:
             self.annotation_types.append("keypoint")
 
-    def add_object_property(self, name: str, property: dict):
-        for object in self.object_classes:
-            if object["name"] == name:
-                break
+    def add_object_property(
+        self,
+        property: dict,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        annotation_type: Optional[str] = None
+    ):
+        object = None
+        if id is not None:
+            for object in self.object_classes:
+                if object["id"] == id:
+                    break
+        elif name is not None and annotation_type is not None:
+            for object in self.object_classes:
+                if object["name"] == name and object["annotation_type"] == annotation_type:
+                    break
+        else:
+            return print("[ERROR] Please provide either id or name and annotation_type")
+        if object is None:
+            return print("[ERROR] Object not found")
         object["properties"].append(property)
 
     def remove_objects_by_class_id(self, id: str):
@@ -193,16 +274,19 @@ class ObjectInterfaceDef:
 
         if annotation_type == "keypoint":
             for keypoint in self.keypoints:
-                if not keypoint_id in keypoint_id_list:
+                if keypoint_id not in keypoint_id_list:
                     self.keypoints.remove(keypoint)
                     break
 
         if not annotation_type in annotation_type_list:
             self.result["annotation_types"].remove(annotation_type)
 
-    def remove_objects_by_class_name(self, name: str):
+    def remove_objects_by_class_name(self, name: str, annotation_type: str):
         for object in self.object_classes:
-            if object["name"] == name:
+            if (
+                object["name"] == name and
+                object["annotation_type"] == annotation_type
+            ):
                 self.remove_objects_by_class_id(id=object["id"])
                 return
 

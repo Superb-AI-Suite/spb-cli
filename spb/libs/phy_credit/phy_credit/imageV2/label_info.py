@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from .. import __version__
 from ..common.image_utils import calculate_imageV2_properties_count
+from ..common.label import Label
 from .image_label_creator import (
     BoxCreator,
     Cuboid2DCreator,
@@ -9,7 +10,10 @@ from .image_label_creator import (
     PolygonCreator,
     PolylineCreator,
     RotatedBoxCreator,
+    AutoLabelCreator,
 )
+from ..common.utils import unique_string_builder
+from ..exceptions import InvalidObjectException
 
 
 class LabelInfo:
@@ -102,7 +106,10 @@ class LabelInfo:
     def __init__(self, label_interface, result=None):
         self.label_interface = label_interface
         self.object_classes_map = {
-            object_class["name"]: object_class
+            unique_string_builder(
+                object_class["name"],
+                object_class["annotation_type"]
+            ): object_class
             for object_class in label_interface.object_detection.object_classes
         }
         self.keypoint_map = {
@@ -141,32 +148,43 @@ class LabelInfo:
     def get_2D_cubid_creator(self):
         return Cuboid2DCreator(self.object_classes_map)
 
-    def add_object(self, class_name, annotation, properties=None, id=None):
-        id = str(uuid4()) if id is None else id
-        annotation_type = self.object_classes_map[class_name][
-            "annotation_type"
-        ]
+    # def add_object(self, label_object: Label):
+    #     assert isinstance(label_object, Label)
+    #     assert unique_string_builder(
+    #         label_object.class_name,
+    #         label_object.annotation_type
+    #     ) in self.object_classes_map.keys()
+    #     self.result["objects"].append(label_object.to_dict())
 
-        self.result["objects"].append(
+    def add_object(
+        self,
+        **kwargs,
+    ):
+        class_name, annotation, properties, id, tracking_id = (
+            kwargs["class_name"],
+            kwargs["annotation"],
+            kwargs["properties"],
+            kwargs.get("id", str(uuid4())),
+            kwargs.get("tracking_id", None),
+        )
+        if id is None:
+            id = str(uuid4())
+
+        label = AutoLabelCreator(
+            self.object_classes_map,
+            self.keypoint_map
+        ).from_dict(
             {
                 "id": id,
-                "class_id": self.object_classes_map[class_name]["id"],
                 "class_name": class_name,
-                "annotation_type": annotation_type,
-                "annotation": {
-                    "multiple": annotation.get("multiple", False),
-                    "coord": annotation["coord"],
-                    "meta": annotation.get("meta", {}),
-                },
-                "properties": LabelInfo._set_properties(
-                    self.object_classes_map[class_name]["properties"],
-                    properties if properties is not None else [],
-                ),
+                "annotation": annotation,
+                "properties": properties,
+                "tracking_id": tracking_id,
             }
         )
-
-    # def add_object(self, label_object):
-    #     self.result["objects"].append(label_object.to_dict())
+        if label is None:
+            raise InvalidObjectException(f"Invalid object : {class_name}")
+        self.result["objects"].append(label.to_dict())
 
     def get_objects(self):
         try:
@@ -175,8 +193,12 @@ class LabelInfo:
                     "id": obj["id"],
                     "class_name": obj["class_name"],
                     "annotation": obj["annotation"],
+                    "annotation_type": obj["annotation_type"],
                     "properties": LabelInfo._get_properties(
-                        self.object_classes_map[obj["class_name"]][
+                        self.object_classes_map[unique_string_builder(
+                                obj["class_name"],
+                                obj["annotation_type"],
+                            )][
                             "properties"
                         ],
                         obj["properties"],
@@ -188,7 +210,7 @@ class LabelInfo:
         except Exception as e:
             return []
 
-    def set_categories(self, categorization=None, properties=None):
+    def set_categories(self, categorization=None):
         if categorization:
             properties = categorization.to_dict()["properties"]
         self.result["categories"] = {
@@ -260,7 +282,10 @@ class LabelInfo:
                         {
                             "id": obj["id"],
                             "color": self.object_classes_map[
-                                obj["class_name"]
+                                unique_string_builder(
+                                    obj["class_name"],
+                                    obj["annotation_type"]
+                                )
                             ]["color"],
                             "visible": True,
                             "selected": False,

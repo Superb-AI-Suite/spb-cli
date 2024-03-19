@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
+from .label import ClassType
 
 JsonDict = Dict[str, Any]
 
@@ -101,43 +102,44 @@ def get_opt_map(options: list) -> dict:
 def set_properties(properties_def, properties):
     prop_def_map = {prop_def["name"]: prop_def for prop_def in properties_def}
     converted_properties = []
-    for prop in properties:
-        prop_def = prop_def_map[prop["name"]]
-        if prop_def["type"] in ["radio", "dropdown", "checkbox"]:
-            opt_map = get_opt_map(prop_def["options"])
-            if prop_def["type"] == "checkbox":
+    if properties and isinstance(properties, list):
+        for prop in properties:
+            prop_def = prop_def_map[prop["name"]]
+            if prop_def["type"] in ["radio", "dropdown", "checkbox"]:
+                opt_map = get_opt_map(prop_def["options"])
+                if prop_def["type"] == "checkbox":
+                    converted_properties.append(
+                        {
+                            "type": prop_def["type"],
+                            "property_id": prop_def["id"],
+                            "property_name": prop_def["name"],
+                            "option_ids": [
+                                opt_map[val]["id"] for val in prop["value"]
+                            ],
+                            "option_names": [
+                                opt_map[val]["name"] for val in prop["value"]
+                            ],
+                        }
+                    )
+                else:
+                    converted_properties.append(
+                        {
+                            "type": prop_def["type"],
+                            "property_id": prop_def["id"],
+                            "property_name": prop_def["name"],
+                            "option_id": opt_map[prop["value"]]["id"],
+                            "option_name": opt_map[prop["value"]]["name"],
+                        }
+                    )
+            elif prop_def["type"] == "free response":
                 converted_properties.append(
                     {
                         "type": prop_def["type"],
                         "property_id": prop_def["id"],
                         "property_name": prop_def["name"],
-                        "option_ids": [
-                            opt_map[val]["id"] for val in prop["value"]
-                        ],
-                        "option_names": [
-                            opt_map[val]["name"] for val in prop["value"]
-                        ],
+                        "value": prop["value"],
                     }
                 )
-            else:
-                converted_properties.append(
-                    {
-                        "type": prop_def["type"],
-                        "property_id": prop_def["id"],
-                        "property_name": prop_def["name"],
-                        "option_id": opt_map[prop["value"]]["id"],
-                        "option_name": opt_map[prop["value"]]["name"],
-                    }
-                )
-        elif prop_def["type"] == "free response":
-            converted_properties.append(
-                {
-                    "type": prop_def["type"],
-                    "property_id": prop_def["id"],
-                    "property_name": prop_def["name"],
-                    "value": prop["value"],
-                }
-            )
     return converted_properties
 
 
@@ -174,3 +176,20 @@ def dim(arr):
     if not type(arr) == list:
         return []
     return [len(arr)] + dim(arr[0])
+
+
+def unique_string_builder(name: str, type: Union[str, 'ClassType']):
+    assert ClassType.is_valid_class_type(type), f"Invalid class type: {type}"
+    if isinstance(type, ClassType):
+        return f"{name}##_##{type.value}"
+    elif isinstance(type, str):
+        return f"{name}##_##{type}"
+    else:
+        raise TypeError(f"Invalid type: {type}")
+
+
+def is_sublist(a: list, b: list) -> bool:
+    for i in a:
+        if i not in b:
+            return False
+    return True

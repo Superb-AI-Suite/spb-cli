@@ -1,5 +1,7 @@
 import semver
 
+from .label import ClassType
+
 
 def is_camel_version(label_interface):
     return (
@@ -13,3 +15,5 @@ def is_camel_version(label_interface):
 #     "PropertyOptionsDef",
 #     "PropertyOptionsItemDef",
 # )
+
+__all__ = ("ClassType",)

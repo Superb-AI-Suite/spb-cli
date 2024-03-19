@@ -222,7 +222,7 @@ class BaseSession:
                 ):
                     self.history.appendleft({"NotFoundException": data})
                     raise NotFoundException(
-                        "Not Found Exception: Open API returns not found exception with status code 404"
+                        "Cannot find the requested resource. Check your request"
                     )
                 elif int(error["extensions"]["code"]) == 409:
                     self.history.appendleft({"ConflictException": data})

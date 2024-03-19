@@ -1,4 +1,4 @@
-from ..common.label import Label
+from ..common.label import Label, ClassType
 from ..common.utils import set_properties
 
 
@@ -9,13 +9,14 @@ class Box(Label):
         )
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
+        self.annotation_type = ClassType.BOX
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "box",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "coord": self.coord,
                 "meta": self.meta,
@@ -32,13 +33,14 @@ class RotatedBox(Label):
         )
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
+        self.annotation_type = ClassType.RBOX
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "coord": self.coord,
                 "meta": self.meta,
@@ -56,13 +58,14 @@ class Polyline(Label):
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
         self.multiple = attributes["multiple"]
+        self.annotation_type = ClassType.POLYLINE
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "polyline",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "multiple": self.multiple,
                 "coord": self.coord,
@@ -81,13 +84,14 @@ class Polygon(Label):
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
         self.multiple = attributes["multiple"]
+        self.annotation_type = ClassType.POLYGON
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "polygon",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "multiple": self.multiple,
                 "coord": self.coord,
@@ -105,13 +109,14 @@ class Keypoint(Label):
         )
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
+        self.annotation_type = ClassType.KEYPOINT
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "keypoint",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "coord": self.coord,
                 "meta": self.meta,
@@ -128,13 +133,14 @@ class Cuboid2D(Label):
         )
         self.coord = attributes["coord"]
         self.meta = attributes["meta"]
+        self.annotation_type = ClassType.CUBOID2D
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "cuboid2d",
+            "annotation_type": self.annotation_type.value,
             "annotation": {
                 "coord": self.coord,
                 "meta": self.meta,

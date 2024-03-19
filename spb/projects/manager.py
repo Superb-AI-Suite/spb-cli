@@ -41,8 +41,7 @@ class ProjectManager(BaseManager):
         name: str,
         label_interface: dict,
         description: str = "",
-        is_public: bool = False,
-        allow_advanced_qa: bool = False,
+        is_public: bool = False
     ) -> Optional[Project]:
         query_id = "createProject"
         self.query.query_id = query_id
@@ -51,9 +50,7 @@ class ProjectManager(BaseManager):
             "description": description,
             "label_interface": label_interface,
             "is_public": is_public,
-            "settings": {
-                "allow_advanced_qa": allow_advanced_qa,
-            },
+            "settings": {"allow_advanced_qa":False},
         }
         if "workapp" not in project_info:
             project_info["workapp"] = label_interface["type"]

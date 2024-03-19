@@ -1,11 +1,50 @@
 from uuid import uuid4
 
 from ..common.label_creator import LabelCreator
-from ..common.utils import dim, set_properties
+from ..common.utils import dim, set_properties, unique_string_builder, is_sublist
 from .video_label import Box, Cuboid2D, Keypoint, Polygon, Polyline, RotatedBox
+from ..common.label import ClassType
 
 
-class BoxCreator(LabelCreator):
+class VideoLabelCreator(LabelCreator):
+    def change_annotations_to_frames(self, label, annotation_type):
+        if label.get("annotations") is not None:
+            frames = []
+            for annotation in label.get("annotations"):
+                meta = annotation.get("meta") if annotation.get("meta") else self._get_meta(
+                    label["class_name"],
+                    annotation_type,
+                )
+                frames.append(
+                    {
+                        "num": annotation["frame_num"],
+                        "properties": annotation["properties"],
+                        "annotation": {
+                            "coord": annotation.get("coord"),
+                            "meta": meta,
+                        },
+                    }
+                )
+        elif label.get("frames") is not None:
+            frames = []
+            for frame in label.get("frames"):
+                meta = frame["annotation"].get("meta") if frame["annotation"].get("meta") else self._get_meta(
+                    label["class_name"],
+                    annotation_type,
+                )
+                frames.append({
+                    "num": frame["num"],
+                    "properties": frame["properties"],
+                    "annotation": {
+                        "coord": frame["annotation"].get("coord"),
+                        "meta": meta,
+                    },
+                })
+        else:
+            raise Exception("No frames or annotations in frame")
+        return frames
+
+class BoxCreator(VideoLabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
@@ -27,57 +66,39 @@ class BoxCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == [
-            "x",
-            "y",
-            "width",
-            "height",
-        ]
-        return Box(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, box):
         class_name = box["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(box["frame"][0]["annotation"]["coord"]) == [
-            "x",
-            "y",
-            "width",
-            "height",
-        ]
+        assert unique_string_builder(
+            class_name,
+            ClassType.BOX
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(box, ClassType.BOX)
+        coord = frames[0]["annotation"]["coord"]
+        assert is_sublist(
+            ["x", "y", "width", "height"],
+            coord.keys(),
+        )
+
         return Box(
             id=box["id"] if "id" in box else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=box["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX
+            )]["properties"],
             properties=box["properties"] if "properties" in box else [],
             tracking_id=box["tracking_id"] if "tracking_id" in box else 0,
         )
 
 
-class RotatedBoxCreator(LabelCreator):
+class RotatedBoxCreator(VideoLabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
@@ -100,59 +121,37 @@ class RotatedBoxCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == [
-            "cx",
-            "cy",
-            "width",
-            "height",
-            "angle",
-        ]
-        return RotatedBox(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, rbox):
         class_name = rbox["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(rbox["frame"][0]["annotation"]["coord"]) == [
-            "cx",
-            "cy",
-            "width",
-            "height",
-            "angle",
-        ]
+        assert unique_string_builder(
+            class_name,
+            ClassType.RBOX
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(rbox, ClassType.RBOX)
+        assert is_sublist(
+            ["cx", "cy", "width", "height", "angle"],
+            frames[0]["annotation"]["coord"].keys(),
+        )
         return RotatedBox(
             id=rbox["id"] if "id" in rbox else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=rbox["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX
+            )]["properties"],
             properties=rbox["properties"] if "properties" in rbox else [],
             tracking_id=rbox["tracking_id"] if "tracking_id" in rbox else 0,
         )
 
 
-class PolylineCreator(LabelCreator):
+class PolylineCreator(VideoLabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
@@ -175,46 +174,32 @@ class PolylineCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
-
-        if dim(coord["points"]) == 1:
-            multiple = False
-
-        return Polyline(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "multiple": multiple,
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, polyline):
         class_name = polyline["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(polyline["frame"][0]["annotation"]["coord"]) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYLINE
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(polyline, ClassType.POLYLINE)
+            
+        coord = frames[0]["annotation"]["coord"]
+        assert len(dim(coord["points"])) == 2
+        assert dim(coord["points"])[-1] >= 1
+
         return Polyline(
             id=polyline["id"] if "id" in polyline else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=polyline["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE
+            )]["properties"],
             properties=polyline["properties"]
             if "properties" in polyline
             else [],
@@ -224,7 +209,7 @@ class PolylineCreator(LabelCreator):
         )
 
 
-class PolygonCreator(LabelCreator):
+class PolygonCreator(VideoLabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
@@ -246,46 +231,31 @@ class PolygonCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
-
-        if dim(coord["points"]) == 1:
-            multiple = False
-
-        return Polygon(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "multiple": multiple,
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, polygon):
         class_name = polygon["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(polygon["frame"][0]["annotation"]["coord"]) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYGON
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(polygon, ClassType.POLYGON)
+        coord = frames[0]["annotation"]["coord"]
+        assert len(dim(coord["points"])) == 3
+        assert dim(coord["points"])[-1] >= 3
+
         return Polygon(
             id=polygon["id"] if "id" in polygon else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=polygon["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON
+            )]["properties"],
             properties=polygon["properties"]
             if "properties" in polygon
             else [],
@@ -295,7 +265,7 @@ class PolygonCreator(LabelCreator):
         )
 
 
-class KeypointCreator(LabelCreator):
+class KeypointCreator(VideoLabelCreator):
     def __init__(self, object_classes_map, keypoint_map):
         super().__init__(object_classes_map)
         self.keypoint_map = keypoint_map
@@ -343,41 +313,37 @@ class KeypointCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
-        return Keypoint(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, keypoint):
         class_name = keypoint["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(keypoint["frame"][0]["annotation"]["coord"]) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.KEYPOINT
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(keypoint, ClassType.KEYPOINT)
+        coord = frames[0]["annotation"]["coord"]
+        assert is_sublist(
+            ["points"],
+            coord.keys(),
+        )
+        assert is_sublist(
+            ["x", "y"],
+            coord["points"][0].keys(),
+        )
+
         return Keypoint(
             id=keypoint["id"] if "id" in keypoint else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=keypoint["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT
+            )]["properties"],
             properties=keypoint["properties"]
             if "properties" in keypoint
             else [],
@@ -387,7 +353,7 @@ class KeypointCreator(LabelCreator):
         )
 
 
-class Cuboid2DCreator(LabelCreator):
+class Cuboid2DCreator(VideoLabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
@@ -417,44 +383,33 @@ class Cuboid2DCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["near", "far"]
-        return Cuboid2D(
-            id=id,
-            class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=[
-                {
-                    "num": num,
-                    "annotation": {
-                        "coord": coord,
-                        "meta": meta if meta else self._get_meta(class_name),
-                    },
-                    "properties": set_properties(
-                        self.object_classes_map[class_name]["properties"],
-                        properties,
-                    ),
-                }
-                for num in nums
-            ],
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
-            tracking_id=tracking_id,
-        )
+        raise NotImplementedError
 
     def from_dict(self, cuboid2d):
         class_name = cuboid2d["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(cuboid2d["frame"][0]["annotation"]["coord"]) == [
-            "near",
-            "far",
-        ]
+        assert unique_string_builder(
+            class_name,
+            ClassType.CUBOID2D
+        ) in self.object_classes_map.keys()
+        frames = self.change_annotations_to_frames(cuboid2d, ClassType.CUBOID2D)
+        coord = frames[0]["annotation"]["coord"]
+        assert is_sublist(
+            ["near", "far"],
+            coord.keys(),
+        )
+
         return Cuboid2D(
             id=cuboid2d["id"] if "id" in cuboid2d else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
-            frames=cuboid2d["frame"],
-            properties_def=self.object_classes_map[class_name]["properties"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D
+            )]["id"],
+            frames=frames,
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D
+            )]["properties"],
             properties=cuboid2d["properties"]
             if "properties" in cuboid2d
             else [],
@@ -462,3 +417,28 @@ class Cuboid2DCreator(LabelCreator):
             if "tracking_id" in cuboid2d
             else 0,
         )
+
+
+class AutoLabelCreator(VideoLabelCreator):
+    def __init__(self, object_classes_map, keypoint_map):
+        super().__init__(object_classes_map)
+        self.keypoint_map = keypoint_map
+
+    def create(self):
+        raise NotImplementedError
+
+    def from_dict(self, label):
+        creators = [
+            BoxCreator(self.object_classes_map),
+            RotatedBoxCreator(self.object_classes_map),
+            PolylineCreator(self.object_classes_map),
+            PolygonCreator(self.object_classes_map),
+            KeypointCreator(self.object_classes_map, self.keypoint_map),
+            Cuboid2DCreator(self.object_classes_map),
+        ]
+        for creator in creators:
+            try:
+                return creator.from_dict(label)
+            except:
+                continue
+        return None

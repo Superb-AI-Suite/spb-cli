@@ -1,5 +1,6 @@
 import time
 import urllib
+import os
 
 from typing import Union, Optional, List
 
@@ -10,7 +11,10 @@ from spb.labels.serializer import LabelInfoBuildParams
 from spb.labels.label import WorkappType, Tags
 from spb.labels.manager import LabelManager
 from spb.users.user import User
-from spb.utils import deprecated
+from spb.utils import (
+    deprecated,
+    retrieve_file,
+)
 
 
 class DataHandle(object):
@@ -110,16 +114,23 @@ class DataHandle(object):
     # Simple SDK functions
     ##############################
 
-    def download_image(self, download_to=None):
+    def download_image(self, download_to="./"):
         self._describe_data_detail()
         if self._is_expired_url():
             return None, None
 
         if download_to is None:
             download_to = self._data.data_key
-            print("[INFO] Downloaded to {}".format(download_to))
-
-        return urllib.request.urlretrieve(self._data.data_url, download_to)
+        path = self._data.data_key.lstrip("/")
+        full_path = os.path.join(
+            download_to,
+            path,
+        )
+        print("[INFO] Downloaded to {}".format(full_path))
+        return retrieve_file(
+            url=self._data.data_url,
+            file_path=full_path
+        )
 
     def get_image(self):
         self._describe_data_detail()
