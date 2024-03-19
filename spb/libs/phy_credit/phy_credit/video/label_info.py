@@ -1,3 +1,4 @@
+
 from uuid import uuid4
 
 from .. import __version__
@@ -5,6 +6,7 @@ from ..common.video_utils import (
     calculate_annotated_frame_count,
     calculate_video_properties_count,
 )
+from ..common.utils import unique_string_builder
 from .video_label_creator import (
     BoxCreator,
     Cuboid2DCreator,
@@ -12,7 +14,9 @@ from .video_label_creator import (
     PolygonCreator,
     PolylineCreator,
     RotatedBoxCreator,
+    AutoLabelCreator,
 )
+from ..exceptions import InvalidObjectException
 
 
 class LabelInfo:
@@ -105,8 +109,10 @@ class LabelInfo:
     def __init__(self, label_interface, result=None):
         self.label_interface = label_interface
         self.object_classes_map = {
-            object_class["name"]: object_class
-            for object_class in label_interface.object_tracking.object_classes
+            unique_string_builder(
+                object_class["name"],
+                object_class["annotation_type"]
+            ): object_class for object_class in label_interface.object_tracking.object_classes
         }
         self.keypoint_map = {
             point["id"]: point
@@ -143,44 +149,36 @@ class LabelInfo:
     def get_2D_cubid_creator(self):
         return Cuboid2DCreator(self.object_classes_map)
 
-    def add_object(
-        self, tracking_id, class_name, annotations, properties=None, id=None
-    ):
-        id = str(uuid4()) if id is None else id
+    def add_object(self, **kwargs):
+        tracking_id, class_name, annotations, frames, properties, id = (
+            kwargs["tracking_id"],
+            kwargs["class_name"],
+            kwargs.get("annotations", None),
+            kwargs.get("frames", None),
+            kwargs.get("properties", None),
+            kwargs.get("id", str(uuid4()))
+        )
+        if id is None:
+            id = str(uuid4())
 
-        self.result["objects"].append(
+        creator = AutoLabelCreator(
+            object_classes_map=self.object_classes_map,
+            keypoint_map=self.keypoint_map,
+        )
+        label = creator.from_dict(
             {
                 "id": id,
                 "tracking_id": tracking_id,
-                "class_id": self.object_classes_map[class_name]["id"],
                 "class_name": class_name,
-                "annotation_type": self.object_classes_map[class_name][
-                    "annotation_type"
-                ],
-                "frames": [
-                    {
-                        "num": anno["frame_num"],
-                        "annotation": {
-                            "multiple": anno.get("multiple", False),
-                            "coord": anno["coord"],
-                            "meta": anno.get("meta", {}),
-                        },
-                        "properties": LabelInfo._set_properties(
-                            self.object_classes_map[class_name]["properties"],
-                            anno.get("properties", []),
-                        ),
-                    }
-                    for anno in annotations
-                ],
-                "properties": LabelInfo._set_properties(
-                    self.object_classes_map[class_name]["properties"],
-                    properties if properties is not None else [],
-                ),
+                "annotations": annotations,
+                "frames": frames,
+                "properties": properties,
             }
         )
 
-    # def add_object(self, label_object):
-    #     self.result["objects"].append(label_object.to_dict())
+        if label is None:
+            raise InvalidObjectException(f"Invalid object : {class_name}")
+        self.result["objects"].append(label.to_dict())
 
     def get_objects(self):
         ocm = self.object_classes_map
@@ -198,14 +196,20 @@ class LabelInfo:
                             ),
                             "coord": frame["annotation"]["coord"],
                             "properties": LabelInfo._get_properties(
-                                ocm[obj["class_name"]]["properties"],
+                                ocm[unique_string_builder(
+                                    obj["class_name"],
+                                    obj["annotation_type"]
+                                )]["properties"],
                                 frame["properties"],
                             ),
                         }
                         for frame in obj["frames"]
                     ],
                     "properties": LabelInfo._get_properties(
-                        ocm[obj["class_name"]]["properties"],
+                        ocm[unique_string_builder(
+                            obj["class_name"],
+                            obj["annotation_type"]
+                        )]["properties"],
                         obj["properties"],
                     ),
                 }
@@ -215,7 +219,6 @@ class LabelInfo:
         except Exception as e:
             return []
 
-    # TODO: set by categorization need to be added
     def set_categories(self, frames=None, properties=None):
         self.result["categories"] = {
             "frames": [
@@ -326,7 +329,10 @@ class LabelInfo:
                     "objects": [
                         {
                             "id": obj["id"],
-                            "color": ocm[obj["class_name"]]["color"],
+                            "color": ocm[unique_string_builder(
+                                obj["class_name"],
+                                obj["annotation_type"]
+                            )]["color"],
                             "visible": True,
                             "selected": False,
                             "tracking_id": obj["tracking_id"],

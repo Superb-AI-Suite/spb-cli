@@ -1,7 +1,8 @@
 from uuid import uuid4
 
 from ..common.label_creator import LabelCreator
-from ..common.utils import dim
+from ..common.label import ClassType
+from ..common.utils import dim, unique_string_builder, is_sublist
 from .image_label import Box, Cuboid2D, Keypoint, Polygon, Polyline, RotatedBox
 
 
@@ -26,36 +27,60 @@ class BoxCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["x", "y", "width", "height"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.BOX,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["x", "y", "width", "height"],
+            coord.keys(),
+        )
+
         return Box(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX,
+            )]["id"],
             coord=coord,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=meta if meta else self._get_meta(class_name, ClassType.BOX),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
 
     def from_dict(self, box):
         class_name = box["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(box["annotation"]["coord"]) == [
-            "x",
-            "y",
-            "width",
-            "height",
-        ]
+        assert unique_string_builder(
+            class_name,
+            ClassType.BOX,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["x", "y", "width", "height"],
+            box["annotation"]["coord"].keys(),
+        )
+
         properties = box["properties"] if "properties" in box else []
         return Box(
             id=box["id"] if "id" in box else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX,
+            )]["id"],
             coord=box["annotation"]["coord"],
-            meta=box["meta"] if "meta" in box else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=box["annotation"]["meta"] if "meta" in box["annotation"] else self._get_meta(
+                class_name,
+                ClassType.BOX,
+            ),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.BOX,
+            )]["properties"],
             properties=properties,
             tracking_id=box["tracking_id"] if "tracking_id" in box else 0,
         )
@@ -83,39 +108,59 @@ class RotatedBoxCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["cx", "cy", "width", "height", "angle"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.RBOX,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["cx", "cy", "width", "height", "angle"],
+            coord.keys(),
+        )
+
         return RotatedBox(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX,
+            )]["id"],
             coord=coord,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=meta if meta else self._get_meta(class_name, ClassType.RBOX),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
 
     def from_dict(self, rbox):
         class_name = rbox["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(rbox["annotation"]["coord"]) == [
-            "cx",
-            "cy",
-            "width",
-            "height",
-            "angle",
-        ]
+        assert unique_string_builder(
+            class_name,
+            ClassType.RBOX,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["cx", "cy", "width", "height", "angle"],
+            rbox["annotation"]["coord"].keys()
+        )
+
         properties = rbox["properties"] if "properties" in rbox else []
         return RotatedBox(
             id=rbox["id"] if "id" in rbox else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX,
+            )]["id"],
             coord=rbox["annotation"]["coord"],
-            meta=rbox["meta"]
-            if "meta" in rbox
-            else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=rbox["annotation"]["meta"]
+            if "meta" in rbox["annotation"]
+            else self._get_meta(class_name, ClassType.RBOX),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.RBOX,
+            )]["properties"],
             properties=properties,
             tracking_id=rbox["tracking_id"] if "tracking_id" in rbox else 0,
         )
@@ -125,60 +170,78 @@ class PolylineCreator(LabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
-    def get_default_polyline_coord(self, multiple=True):
-        if multiple:
-            points = [[{"x": 0, "y": 0}]]
-        else:
-            points = [{"x": 0, "y": 0}]
-        return {"points": points}
+    def get_default_polyline_coord(self):
+        return {"points": [[{"x": 0, "y": 0}]]}
 
     def create(
         self,
         class_name: str,
         coord: dict,
-        multiple: bool = True,
         meta: dict = {},
         properties: list = [],
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
-
-        if dim(coord["points"]) == 1:
-            multiple = False
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYLINE,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            coord.keys(),
+        )
+        assert len(dim(coord["points"])) == 2
+        assert dim(coord["points"])[-1] >= 1
 
         return Polyline(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE,
+            )]["id"],
             coord=coord,
-            multiple=multiple,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            multiple=True,
+            meta=meta if meta else self._get_meta(
+                class_name, ClassType.POLYLINE),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
 
     def from_dict(self, polyline):
         class_name = polyline["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(polyline["annotation"]["coord"]) == ["points"]
-
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYLINE,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            polyline["annotation"]["coord"].keys(),
+        )
+        assert len(dim(polyline["annotation"]["coord"]["points"])) == 2
+        assert dim(polyline["annotation"]["coord"]["points"])[-1] >= 1
         properties = polyline["properties"] if "properties" in polyline else []
-        multiple = True
-        if dim(polyline["annotation"]["coord"]) == 1:
-            multiple = False
+
         return Polyline(
             id=polyline["id"] if "id" in polyline else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE
+            )]["id"],
             coord=polyline["annotation"]["coord"],
-            multiple=multiple,
-            meta=polyline["meta"]
-            if "meta" in polyline
-            else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            multiple=True,
+            meta=polyline["annotation"]["meta"]
+            if "meta" in polyline["annotation"]
+            else self._get_meta(class_name, ClassType.POLYLINE),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYLINE
+            )]["properties"],
             properties=properties,
             tracking_id=polyline["tracking_id"]
             if "tracking_id" in polyline
@@ -190,60 +253,79 @@ class PolygonCreator(LabelCreator):
     def __init__(self, object_classes_map):
         super().__init__(object_classes_map)
 
-    def get_default_polyline_coord(self, multiple=True):
-        if multiple:
-            points = [[[{"x": 0, "y": 0}]]]
-        else:
-            points = [{"x": 0, "y": 0}]
-        return {"points": points}
+    def get_default_polyline_coord(self):
+        return {"points": [[[{"x": 0, "y": 0}]]]}
 
     def create(
         self,
         class_name: str,
         coord: dict,
-        multiple: bool = True,
         meta: dict = {},
         properties: list = [],
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
-
-        if dim(coord["points"]) == 1:
-            multiple = False
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYGON,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            coord.keys(),
+        )
+        assert len(dim(coord["points"])) == 3
+        assert dim(coord["points"])[-1] >= 3
 
         return Polygon(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON,
+            )]["id"],
             coord=coord,
-            multiple=multiple,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            multiple=True,
+            meta=meta if meta else self._get_meta(
+                class_name, ClassType.POLYGON),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
 
     def from_dict(self, polygon):
         class_name = polygon["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(polygon["annotation"]["coord"]) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.POLYGON,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            polygon["annotation"]["coord"].keys(),
+        )
+        assert len(dim(polygon["annotation"]["coord"]["points"])) == 3
+        assert dim(polygon["annotation"]["coord"]["points"])[-1] >= 3
 
         properties = polygon["properties"] if "properties" in polygon else []
-        multiple = True
-        if dim(polygon["annotation"]["coord"]) == 1:
-            multiple = False
+
         return Polygon(
             id=polygon["id"] if "id" in polygon else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON,
+            )]["id"],
             coord=polygon["annotation"]["coord"],
-            multiple=multiple,
-            meta=polygon["meta"]
-            if "meta" in polygon
-            else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            multiple=True,
+            meta=polygon["annotation"].get("meta", None)
+            if "meta" in polygon["annotation"]
+            else self._get_meta(class_name, ClassType.POLYGON),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.POLYGON,
+            )]["properties"],
             properties=properties,
             tracking_id=polygon["tracking_id"]
             if "tracking_id" in polygon
@@ -298,15 +380,33 @@ class KeypointCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.KEYPOINT,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            coord.keys(),
+        )
+        assert is_sublist(
+            ["x", "y"],
+            coord["points"][0].keys(),
+        )
+
         return Keypoint(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT,
+            )]["id"],
             coord=coord,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=meta if meta else self._get_meta(
+                class_name, ClassType.KEYPOINT),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
@@ -314,45 +414,37 @@ class KeypointCreator(LabelCreator):
     def from_dict(self, keypoint):
         class_name = keypoint["class_name"]
         coord = keypoint["annotation"]["coord"]
-        assert class_name in self.object_classes_map.keys()
 
-        properties = keypoint["properties"] if "properties" in keypoint else []
-        if "graph" in keypoint["annotation"]["coord"]:  # legacy version
-            assert list(coord) == ["graph"]
-            nodes = coord["graph"]["nodes"]
-            states = coord["graph"]["states"]
-            points = []
-            for point, node, state in zip(
-                self.keypoint_map[
-                    self.object_classes_map[class_name][
-                        "keypoint_interface_id"
-                    ]
-                ]["points"],
-                nodes,
-                states,
-            ):
-                points.append(
-                    {
-                        "name": point["name"],
-                        **node,
-                        "state": {
-                            "visible": state["state"]["visible"],
-                            "valid": True,
-                        },
-                    }
-                )
-        else:
-            assert list(coord) == ["points"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.KEYPOINT,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["points"],
+            coord.keys(),
+        )
+        assert is_sublist(
+            ["x", "y"],
+            coord["points"][0].keys(),
+        )
+
         return Keypoint(
             id=keypoint["id"] if "id" in keypoint else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT,
+            )]["id"],
             coord=coord,
-            meta=keypoint["meta"]
-            if "meta" in keypoint
-            else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
-            properties=properties,
+            meta=keypoint["annotation"]["meta"]
+            if "meta" in keypoint["annotation"]
+            else self._get_meta(class_name, ClassType.KEYPOINT),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.KEYPOINT,
+            )]["properties"],
+            properties=keypoint["properties"] if "properties" in keypoint else [
+            ],
             tracking_id=keypoint["tracking_id"]
             if "tracking_id" in keypoint
             else 0,
@@ -388,37 +480,90 @@ class Cuboid2DCreator(LabelCreator):
         id: str = str(uuid4()),
         tracking_id: int = None,
     ):
-        assert class_name in self.object_classes_map.keys()
-        assert list(coord.keys()) == ["near", "far"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.CUBOID2D,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["near", "far"],
+            coord.keys(),
+        )
+
         return Cuboid2D(
             id=id,
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D,
+            )]["id"],
             coord=coord,
-            meta=meta if meta else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=meta if meta else self._get_meta(
+                class_name,
+                ClassType.CUBOID2D
+            ),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D,
+            )]["properties"],
             properties=properties,
             tracking_id=tracking_id,
         )
 
     def from_dict(self, cuboid2d):
         class_name = cuboid2d["class_name"]
-        assert class_name in self.object_classes_map.keys()
-        assert list(cuboid2d["annotation"]["coord"]) == ["near", "far"]
+        assert unique_string_builder(
+            class_name,
+            ClassType.CUBOID2D,
+        ) in self.object_classes_map.keys()
+        assert is_sublist(
+            ["near", "far"],
+            cuboid2d["annotation"]["coord"].keys()
+        )
 
         properties = cuboid2d["properties"] if "properties" in cuboid2d else []
-
-        return Cuboid2D(
+        a = Cuboid2D(
             id=cuboid2d["id"] if "id" in cuboid2d else str(uuid4()),
             class_name=class_name,
-            class_id=self.object_classes_map[class_name]["id"],
+            class_id=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D,
+            )]["id"],
             coord=cuboid2d["annotation"]["coord"],
-            meta=cuboid2d["meta"]
-            if "meta" in cuboid2d
-            else self._get_meta(class_name),
-            properties_def=self.object_classes_map[class_name]["properties"],
+            meta=cuboid2d["annotation"]["meta"]
+            if "meta" in cuboid2d["annotation"]
+            else self._get_meta(class_name, ClassType.CUBOID2D),
+            properties_def=self.object_classes_map[unique_string_builder(
+                class_name,
+                ClassType.CUBOID2D,
+            )]["properties"],
             properties=properties,
             tracking_id=cuboid2d["tracking_id"]
             if "tracking_id" in cuboid2d
             else 0,
         )
+        return a
+
+
+class AutoLabelCreator(LabelCreator):
+    def __init__(self, object_classes_map, keypoint_map):
+        super().__init__(object_classes_map)
+        self.keypoint_map = keypoint_map
+
+    def create(self):
+        raise NotImplementedError
+
+    def from_dict(self, label):
+        creators = [
+            BoxCreator(self.object_classes_map),
+            RotatedBoxCreator(self.object_classes_map),
+            PolylineCreator(self.object_classes_map),
+            PolygonCreator(self.object_classes_map),
+            KeypointCreator(self.object_classes_map, self.keypoint_map),
+            Cuboid2DCreator(self.object_classes_map),
+        ]
+        for creator in creators:
+            try:
+                return creator.from_dict(label)
+            except:
+                continue
+        return None

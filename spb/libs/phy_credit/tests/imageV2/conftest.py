@@ -793,7 +793,7 @@ def sample_build_result():
 def label_interface_sample_v4():
     return {
         "type": "image-siesta",
-        "version": "0.6.4",
+        "version": "0.6.5",
         "data_type": "image",
         "categorization": {
             "properties": [
@@ -1127,7 +1127,7 @@ def sample_info_result_v4():
 def label_interface_sample_v6():
     return {
         "type": "image-siesta",
-        "version": "0.6.4",
+        "version": "0.6.5",
         "data_type": "image",
         "categorization": {
             "properties": [
@@ -1373,7 +1373,7 @@ def label_interface_sample_v6():
             "object_classes": [
                 {
                     "id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "name": "box",
+                    "name": "person",
                     "color": "#FF625A",
                     "properties": [
                         {
@@ -1424,7 +1424,7 @@ def label_interface_sample_v6():
                 },
                 {
                     "id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
-                    "name": "rbox",
+                    "name": "person",
                     "color": "#FE9573",
                     "properties": [
                         {
@@ -1704,7 +1704,7 @@ def label_interface_sample_v6():
 @pytest.fixture
 def label_info_sample_v6():
     return {
-        "version": "0.6.4",
+        "version": "0.6.5",
         "meta": {
             "image_info": {},
             "edit_info": {
@@ -1752,7 +1752,7 @@ def label_info_sample_v6():
             "objects": [
                 {
                     "id": "12590dbe-72f1-4278-b1fe-b4a0642d55b6",
-                    "class_name": "box",
+                    "class_name": "person",
                     "class_id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
                     "annotation_type": "box",
                     "annotation": {
@@ -1774,7 +1774,7 @@ def label_info_sample_v6():
                 },
                 {
                     "id": "6f4e5ef6-e3ea-4a2d-b0a1-3ebd00b965b3",
-                    "class_name": "rbox",
+                    "class_name": "person",
                     "class_id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
                     "annotation_type": "rbox",
                     "annotation": {
@@ -2004,8 +2004,8 @@ def label_info_sample_v6():
                 "e970ec55-2dd7-4a94-8a93-ec2b34ed5005",
             ],
             "class": [
-                "box",
-                "rbox",
+                "person",
+                "person",
                 "poly",
                 "poly_seg",
                 "face_kp",
@@ -2014,12 +2014,12 @@ def label_info_sample_v6():
             "classes_count": [
                 {
                     "id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "name": "box",
+                    "name": "person",
                     "count": 1,
                 },
                 {
                     "id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
-                    "name": "rbox",
+                    "name": "person",
                     "count": 1,
                 },
                 {

@@ -1,8 +1,8 @@
 from uuid import uuid4
 
 from . import __version__
-
 from ..label_interface import LabelInterface
+
 
 class LabelInfo:
     @classmethod

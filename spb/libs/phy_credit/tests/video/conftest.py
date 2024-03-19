@@ -1353,7 +1353,7 @@ def sample_info_result_w_properties():
 def label_interface_sample_v6():
     return {
         "type": "video-siesta",
-        "version": "0.6.4",
+        "version": "0.6.5",
         "data_type": "image sequence",
         "categorization": {
             "properties": [
@@ -1602,7 +1602,7 @@ def label_interface_sample_v6():
             "object_classes": [
                 {
                     "id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "name": "box",
+                    "name": "person",
                     "color": "#FF625A",
                     "properties": [
                         {
@@ -1656,7 +1656,7 @@ def label_interface_sample_v6():
                 },
                 {
                     "id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
-                    "name": "rbox",
+                    "name": "person",
                     "color": "#FE9573",
                     "properties": [
                         {
@@ -1951,7 +1951,7 @@ def label_interface_sample_v6():
 @pytest.fixture
 def label_info_sample_v6():
     return {
-        "version": "0.6.4",
+        "version": "0.6.5",
         "meta": {
             "image_info": {},
             "edit_info": {
@@ -2005,9 +2005,9 @@ def label_info_sample_v6():
             "objects": [
                 {
                     "id": "12590dbe-72f1-4278-b1fe-b4a0642d55b6",
-                    "class_name": "box",
+                    "class_name": "person",
                     "class_id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "annotaion_type": "box",
+                    "annotation_type": "box",
                     "frames": [
                         {
                             "num": 0,
@@ -2033,7 +2033,7 @@ def label_info_sample_v6():
                 },
                 {
                     "id": "6f4e5ef6-e3ea-4a2d-b0a1-3ebd00b965b3",
-                    "class_name": "rbox",
+                    "class_name": "person",
                     "class_id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
                     "annotation_type": "rbox",
                     "frames": [
@@ -2064,7 +2064,7 @@ def label_info_sample_v6():
                     "id": "9b20fabd-9b33-422b-bbb5-870cfaad31b2",
                     "class_name": "poly",
                     "class_id": "7c6ab4db-5b0c-4143-b992-6dc732f28870",
-                    "annotation_type": "rbox",
+                    "annotation_type": "polyline",
                     "frames": [
                         {
                             "num": 0,
@@ -2096,7 +2096,7 @@ def label_info_sample_v6():
                     "id": "92e28cc4-7eee-4a72-9dc4-383ffd4ecf70",
                     "class_name": "poly_seg",
                     "class_id": "5a122ca5-b827-4896-9476-ab01d5164853",
-                    "annotation_type": "rbox",
+                    "annotation_type": "polygon",
                     "frames": [
                         {
                             "num": 0,
@@ -2132,7 +2132,7 @@ def label_info_sample_v6():
                     "id": "9ed93108-2c3a-4eba-8613-0633003a239f",
                     "class_name": "face_kp",
                     "class_id": "96007e8f-3c76-4359-88d3-27cc3b2e986f",
-                    "annotation_type": "rbox",
+                    "annotation_type": "keypoint",
                     "frames": [
                         {
                             "num": 0,
@@ -2293,7 +2293,7 @@ def label_info_sample_v6():
                     "id": "10a57f9d-3d04-4ce6-aa8f-516300cd8f75",
                     "class_name": "2d_cuboid",
                     "class_id": "e970ec55-2dd7-4a94-8a93-ec2b34ed5005",
-                    "annotation_type": "rbox",
+                    "annotation_type": "cuboid2d",
                     "frames": [
                         {
                             "num": 0,
@@ -2338,8 +2338,8 @@ def label_info_sample_v6():
                 "e970ec55-2dd7-4a94-8a93-ec2b34ed5005",
             ],
             "class": [
-                "box",
-                "rbox",
+                "person",
+                "person",
                 "poly",
                 "poly_seg",
                 "face_kp",
@@ -2348,12 +2348,12 @@ def label_info_sample_v6():
             "classes_count": [
                 {
                     "id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "name": "box",
+                    "name": "person",
                     "count": 1,
                 },
                 {
                     "id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
-                    "name": "rbox",
+                    "name": "person",
                     "count": 1,
                 },
                 {
@@ -2381,12 +2381,12 @@ def label_info_sample_v6():
             "classes_annotation_count": [
                 {
                     "id": "346c2e59-0d4d-4818-8cd0-538b157fa06c",
-                    "name": "box",
+                    "name": "person",
                     "count": 1,
                 },
                 {
                     "id": "e15fae76-1702-44e9-97d8-25bf420e4dbe",
-                    "name": "rbox",
+                    "name": "person",
                     "count": 1,
                 },
                 {

@@ -97,7 +97,7 @@ def test_build_label_interface_v6_from_scratch(label_interface_sample_v6):
         },
     )
     object_detection.add_box(
-        name="box",
+        name="person",
         id="346c2e59-0d4d-4818-8cd0-538b157fa06c",
         color="#FF625A",
         properties=[box_prop, box_prop_1, box_prop_2],
@@ -135,7 +135,7 @@ def test_build_label_interface_v6_from_scratch(label_interface_sample_v6):
         },
     )
     object_detection.add_rbox(
-        name="rbox",
+        name="person",
         id="e15fae76-1702-44e9-97d8-25bf420e4dbe",
         color="#FE9573",
         properties=[rbox_prop, rbox_prop_1, rbox_prop_2],

@@ -1,4 +1,4 @@
-from ..common.label import Label
+from ..common.label import Label, ClassType
 from ..common.utils import set_properties
 
 
@@ -6,13 +6,14 @@ class Box(Label):
     def __init__(self, **attributes):
         super().__init__(attributes=attributes)
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.BOX
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotaion_type": "box",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],
@@ -32,13 +33,14 @@ class RotatedBox(Label):
             attributes=attributes,
         )
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.RBOX
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],
@@ -58,13 +60,14 @@ class Polyline(Label):
             attributes=attributes,
         )
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.POLYLINE
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],
@@ -84,13 +87,14 @@ class Polygon(Label):
             attributes=attributes,
         )
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.POLYGON
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],
@@ -110,13 +114,14 @@ class Keypoint(Label):
             attributes=attributes,
         )
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.KEYPOINT
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],
@@ -136,13 +141,14 @@ class Cuboid2D(Label):
             attributes=attributes,
         )
         self.frames = attributes["frames"]
+        self.annotation_type = ClassType.CUBOID2D
 
     def to_dict(self):
         return {
             "id": self.id,
             "class_name": self.class_name,
             "class_id": self.class_id,
-            "annotation_type": "rbox",
+            "annotation_type": self.annotation_type.value,
             "frames": [
                 {
                     "num": frame["num"],

@@ -44,112 +44,330 @@ def test_build_label_info_with_result(
     )
 
 
-# # using creator
-# def test_build_label_info_from_scratch_v6(
-#     label_interface_sample_v6, label_info_sample_v6
-# ):
-#     label_interface = LabelInterface.from_dict(label_interface_sample_v6)
-#
-#     label_info = build_label_info(label_interface)
-#     box_creator = label_info.get_box_creator()
-#
-#     box = box_creator.create(
-#         id="12590dbe-72f1-4278-b1fe-b4a0642d55b6",
-#         class_name="box",
-#         nums=[0],
-#         coord={"x": 26.3, "y": 24.1, "width": 36.3, "height": 25.2},
-#     )
-#
-#     label_info.add_object(box)
-#
-#     rbox_creator = label_info.get_rotated_box_creator()
-#
-#     rbox = rbox_creator.create(
-#         id="6f4e5ef6-e3ea-4a2d-b0a1-3ebd00b965b3",
-#         class_name="rbox",
-#         nums=[0],
-#         coord={
-#             "cx": 55.6,
-#             "cy": 84.0,
-#             "width": 27.8,
-#             "height": 22.4,
-#             "angle": 24.3,
-#         },
-#     )
-#
-#     label_info.add_object(rbox)
-#
-#     polyline_creator = label_info.get_polyline_creator()
-#
-#     polyline = polyline_creator.create(
-#         id="9b20fabd-9b33-422b-bbb5-870cfaad31b2",
-#         class_name="poly",
-#         nums=[0],
-#         coord={
-#             "points": [
-#                 [
-#                     {"x": 20.5, "y": 144.8},
-#                     {"x": 40.9, "y": 117.3},
-#                     {"x": 40.8, "y": 145.8},
-#                 ]
-#             ]
-#         },
-#     )
-#     label_info.add_object(polyline)
-#
-#     polygon_creator = label_info.get_polygon_creator()
-#
-#     polygon = polygon_creator.create(
-#         id="92e28cc4-7eee-4a72-9dc4-383ffd4ecf70",
-#         class_name="poly_seg",
-#         nums=[0],
-#         coord={
-#             "points": [
-#                 [
-#                     [
-#                         {"x": 21.5, "y": 191.2},
-#                         {"x": 24.2, "y": 167.7},
-#                         {"x": 28.1, "y": 158.1},
-#                         {"x": 41.2, "y": 161.9},
-#                         {"x": 21.5, "y": 191.2},
-#                     ],
-#                 ]
-#             ]
-#         },
-#     )
-#
-#     label_info.add_object(polygon)
-#
-#     keypoint_cretor = label_info.get_keypoint_creator()
-#
-#     default_kp_coord = keypoint_cretor.get_default_keypoint_coord(
-#         keypoint_interface_id="facial-landmark-15"
-#     )
-#     keypoint = keypoint_cretor.create(
-#         id="9ed93108-2c3a-4eba-8613-0633003a239f",
-#         nums=[0],
-#         class_name="face_kp",
-#         coord=default_kp_coord,
-#     )
-#
-#     label_info.add_object(keypoint)
-#
-#     cuboid2d_creator = label_info.get_2D_cubid_creator()
-#
-#     cuboid_2d = cuboid2d_creator.create(
-#         id="10a57f9d-3d04-4ce6-aa8f-516300cd8f75",
-#         nums=[0],
-#         class_name="2d_cuboid",
-#         coord={
-#             "near": {"x": 15.1, "y": 225.7, "width": 44.9, "height": 37.6},
-#             "far": {"x": 83.2, "y": 239.3, "width": 5.4, "height": 16.5},
-#         },
-#     )
-#
-#     label_info.add_object(cuboid_2d)
-#
-#     label_info.build_info()
-#
-#     assert json.dumps(label_info.build_info(), sort_keys=True) == json.dumps(
-#         label_info_sample_v6, sort_keys=True
-#     )
+def test_build_label_info_from_scratch_v6(
+    label_interface_sample_v6, label_info_sample_v6
+):
+    label_interface = LabelInterface.from_dict(label_interface_sample_v6)
+
+    label_info = build_label_info(label_interface)
+
+    label_info.add_object(
+        id="12590dbe-72f1-4278-b1fe-b4a0642d55b6",
+        class_name="person",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "coord": {
+                        "x": 26.3,
+                        "y": 24.1,
+                        "width": 36.3,
+                        "height": 25.2,
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#FF625A",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    label_info.add_object(
+        id="6f4e5ef6-e3ea-4a2d-b0a1-3ebd00b965b3",
+        class_name="person",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "coord": {
+                        "cx": 55.6,
+                        "cy": 84.0,
+                        "width": 27.8,
+                        "height": 22.4,
+                        "angle": 24.3,
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#FE9573",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    label_info.add_object(
+        id="9b20fabd-9b33-422b-bbb5-870cfaad31b2",
+        class_name="poly",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "multiple": True,
+                    "coord": {
+                        "points": [
+                            [
+                                {"x": 20.5, "y": 144.8},
+                                {"x": 40.9, "y": 117.3},
+                                {"x": 40.8, "y": 145.8},
+                            ]
+                        ]
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#FFAF5A",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    label_info.add_object(
+        id="92e28cc4-7eee-4a72-9dc4-383ffd4ecf70",
+        class_name="poly_seg",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "multiple": True,
+                    "coord": {
+                        "points": [
+                            [
+                                [
+                                    {"x": 21.5, "y": 191.2},
+                                    {"x": 24.2, "y": 167.7},
+                                    {"x": 28.1, "y": 158.1},
+                                    {"x": 41.2, "y": 161.9},
+                                    {"x": 21.5, "y": 191.2},
+                                ]
+                            ]
+                        ]
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#FFCC00",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    label_info.add_object(
+        id="9ed93108-2c3a-4eba-8613-0633003a239f",
+        class_name="face_kp",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "coord": {
+                        "points": [
+                            {
+                                "name": "left eye center",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "left eye inner corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "left eye outer corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "right eye center",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "right eye inner corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "right eye outer corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "left eyebrow inner end",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "left eyebrow outer end",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "right eyebrow inner end",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "right eyebrow outer end",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "nose tip",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "mouth left corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "mouth right corner",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "mouth center top lip",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                            {
+                                "name": "mouth center bottom lip",
+                                "x": 0.0,
+                                "y": 0.0,
+                                "state": {
+                                    "visible": True,
+                                    "valid": True,
+                                },
+                            },
+                        ]
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#FFF73E",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    label_info.add_object(
+        id="10a57f9d-3d04-4ce6-aa8f-516300cd8f75",
+        class_name="2d_cuboid",
+        annotations=[
+            {
+                "num": 0,
+                "properties": [],
+                "annotation": {
+                    "coord": {
+                        "near": {
+                            "x": 15.1,
+                            "y": 225.7,
+                            "width": 44.9,
+                            "height": 37.6,
+                        },
+                        "far": {
+                            "x": 83.2,
+                            "y": 239.3,
+                            "width": 5.4,
+                            "height": 16.5,
+                        },
+                    },
+                    "meta": {
+                        "z_index": 1,
+                        "visible": True,
+                        "alpha": 1,
+                        "color": "#DEF00F",
+                    },
+                },
+            }
+        ],
+        properties=[],
+        tracking_id=None,
+    )
+
+    print(json.dumps(label_info_sample_v6, sort_keys=True, indent=4))
+    assert json.dumps(label_info.build_info(), sort_keys=True) == json.dumps(
+        label_info_sample_v6, sort_keys=True
+    )

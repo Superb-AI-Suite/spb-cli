@@ -114,8 +114,7 @@ class Client(object):
         name: str,
         label_interface: dict,
         description: str = "",
-        is_public: bool = False,
-        allow_advanced_qa: bool = False,
+        is_public: bool = False
     ):
         manager = ProjectManager(
             self.credential["team_name"], self.credential["access_key"]
@@ -125,7 +124,6 @@ class Client(object):
             label_interface=label_interface,
             description=description,
             is_public=is_public,
-            allow_advanced_qa=allow_advanced_qa,
         )
         if project:
             self._project = project

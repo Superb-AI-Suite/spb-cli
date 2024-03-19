@@ -9,7 +9,10 @@ from spb.exceptions import (
     NotSupportedException,
     SDKException
 )
-from spb.utils import deprecated
+from spb.utils import (
+    deprecated,
+    retrieve_file,
+)
 
 
 class PointcloudDataHandle (DataHandle):
@@ -57,7 +60,7 @@ class PointcloudDataHandle (DataHandle):
         for i, frame in enumerate(frames):
             index = str(i+1).zfill(8)
             frame_urls = {
-                "frame_url": f"{url}{frame_path_prefix}{index}/frame_{index}.pcd?{query}",
+                "frame_url": f"{url}{frame_path_prefix}{index}/frame_{index}.bin?{query}",
                 "frame_original_file_name": frame.get("frame_file_name", None),
                 "images": []
             }
@@ -83,13 +86,23 @@ class PointcloudDataHandle (DataHandle):
         if data_urls is None:
             raise SDKException("[ERROR] Unknown Error. Cannot build data download urls.")
         # Download manifest file
-        urllib.request.urlretrieve(data_urls["manifest_url"], os.path.join(download_to, data_urls["manifest_original_file_name"]))
-
+        data_urls["manifest_original_file_name"] = data_urls["manifest_original_file_name"].lstrip("/")
+        retrieve_file(
+            url=data_urls["manifest_url"],
+            file_path=os.path.join(download_to, data_urls["manifest_original_file_name"])
+        )
         for frame in data_urls["frames"]:
-            urllib.request.urlretrieve(frame["frame_url"], os.path.join(download_to, frame["frame_original_file_name"]))
+            frame["frame_original_file_name"] = frame["frame_original_file_name"].lstrip("/")
+            retrieve_file(
+                url=frame["frame_url"],
+                file_path=os.path.join(download_to, frame["frame_original_file_name"])
+            )
             for image in frame["images"]:
-                urllib.request.urlretrieve(image["image_url"], os.path.join(download_to, image["image_original_file_name"]))
-
+                image["image_original_file_name"] = image["image_original_file_name"].lstrip("/")
+                retrieve_file(
+                    url=image["image_url"],
+                    file_path=os.path.join(download_to, image["image_original_file_name"]),
+                )
         return True
     
     def get_object_labels(self):
