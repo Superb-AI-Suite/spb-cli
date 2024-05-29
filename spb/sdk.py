@@ -53,6 +53,9 @@ from spb.pointcloud_sdk import PointcloudDataHandle
 from spb.utils.search_filter import SearchFilter
 from spb.users.manager import UserManager
 from spb.users import User
+from spb.utils import (
+    deprecated,
+)
 
 logger = logging.getLogger()
 
@@ -510,6 +513,7 @@ class Client(object):
             response = session.put(presigned_url, data=data)
         return result
 
+    @deprecated("Upload image from s3 is deprecated. Use upload_image instead.")
     def upload_image_s3(self, bucket_name, path, dataset_name, key=None):
         if self._project is None:
             raise ParameterException(f"[ERROR] Project ID is not described.")
