@@ -485,7 +485,7 @@ class Client(object):
             raise ParameterException(f"[ERROR] Invalid path.")
 
         if name is None:
-            name = path.split("/")[-1]
+            name = os.path.basename(path)
 
         if key is None:
             key = name
