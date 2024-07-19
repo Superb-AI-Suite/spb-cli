@@ -11,6 +11,7 @@ def version(name):
 setup(
     name='phy_credit',
     version=version('phy_credit'),
+    author="Superb AI",
     packages=find_packages(),
     install_requires=[
         'semver>=2.13.0',

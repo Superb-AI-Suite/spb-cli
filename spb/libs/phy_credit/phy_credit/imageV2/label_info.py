@@ -163,7 +163,7 @@ class LabelInfo:
         class_name, annotation, properties, id, tracking_id = (
             kwargs["class_name"],
             kwargs["annotation"],
-            kwargs["properties"],
+            kwargs.get("properties", None),
             kwargs.get("id", str(uuid4())),
             kwargs.get("tracking_id", None),
         )
@@ -210,7 +210,7 @@ class LabelInfo:
         except Exception as e:
             return []
 
-    def set_categories(self, categorization=None):
+    def set_categories(self, categorization=None, properties=None):
         if categorization:
             properties = categorization.to_dict()["properties"]
         self.result["categories"] = {

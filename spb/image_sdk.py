@@ -158,7 +158,7 @@ class DataHandle(object):
         return [tag.name for tag in self._data.tags]
 
     def set_category_labels(
-        self, labels: list = None, category: dict = None, properties=None
+        self, properties=None
     ):
         # build new info
         self._label_build_params.set_categories(properties=properties)
