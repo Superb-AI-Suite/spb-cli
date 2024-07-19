@@ -114,3 +114,19 @@ class VideoDataHandle(DataHandle):
     @deprecated("Use [update_tags].")
     def set_tags(self, tags: list = None):
         raise NotSupportedException("[ERROR] Video does not supported.")
+
+    def set_category_labels(
+        self, properties=None, frames=None
+    ):
+        self._label_build_params.set_categories(
+            properties=properties,
+            frames=frames,
+        )
+        info = self._label_build_params.build_info()
+        categories = {"properties": [], "frames": []}
+        if "result" in info and "categories" in info["result"]:
+            categories = info["result"]["categories"]
+        self._data.result = {
+            **(self._data.result or {}),
+            "categories": categories,
+        }
