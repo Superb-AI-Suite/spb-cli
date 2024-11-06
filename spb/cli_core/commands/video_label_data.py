@@ -240,20 +240,44 @@ def _download_worker(args):
             error = {'label':str(e)}
             label_error = error
         try:
-            custom_signed_url = json.loads(label.data_url)
-            base_url = custom_signed_url['base_url']
-            query = custom_signed_url['query']
-            file_infos = custom_signed_url['file_infos']
-            for idx, file_info in enumerate(file_infos, 1):
-                file_path = f'{path}/{file_info["file_name"]}'
-                ext = file_info['file_name'].split('.')[1]
-                new_path = os.path.split(file_path)[0]
-                if not os.path.exists(new_path):
-                    os.makedirs(new_path)
-                file_url = '{}image_{:08d}.{}?{}'.format(base_url, idx, ext, query)
-                with requests_retry_session() as session:
-                    r = session.get(file_url, allow_redirects=True)
-                    open(file_path, 'wb').write(r.content)
+            data_url = json.loads(label.data_url)
+
+            if type(data_url) is list:
+                for frame_idx in range(len(data_url)):
+                    url = data_url[frame_idx]
+                    try:
+                        parts = url.split("://", 1)
+                        if len(parts) < 2:
+                            raise ValueError("Invalid URL format: missing '://' separator")
+
+                        path_parts = parts[1].split("/", 2)
+                        if len(path_parts) < 3:
+                            raise ValueError("Invalid URL format: insufficient '/' parts for path extraction")
+
+                        url_path = path_parts[2].split("?", 1)[0]
+                    except ValueError as e:
+                        raise ValueError("Invalid URL format")
+                    file_path = os.path.join(path, url_path)
+                    folder, _ = os.path.split(file_path)
+                    if folder:
+                        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    with requests_retry_session() as session:
+                        r = session.get(url, allow_redirects=True)
+                        open(file_path, 'wb').write(r.content)
+            else:
+                base_url = data_url['base_url']
+                query = data_url['query']
+                file_infos = data_url['file_infos']
+                for idx, file_info in enumerate(file_infos, 1):
+                    file_path = os.path.join(path, file_info["file_name"])
+                    ext = file_info['file_name'].split('.')[1]
+                    folder, _ = os.path.split(file_path)
+                    if folder:
+                        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    file_url = '{}image_{:08d}.{}?{}'.format(base_url, idx, ext, query)
+                    with requests_retry_session() as session:
+                        r = session.get(file_url, allow_redirects=True)
+                        open(file_path, 'wb').write(r.content)
         except Exception as e:
             error.update({'data':str(e)})
             data_error = error
