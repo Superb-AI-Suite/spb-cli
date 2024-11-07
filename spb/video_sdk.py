@@ -40,9 +40,12 @@ class VideoDataHandle(DataHandle):
         if data_url is None:
             data_url = json.loads(self._data.data_url)
 
-        file_ext = data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
-        file_name = f"image_{(idx+1):08}.{file_ext}"
-        return f"{data_url['base_url']}{file_name}?{data_url['query']}"
+        if type(data_url) is list:
+            return data_url[idx]
+        else:
+            file_ext = data_url["file_infos"][idx]["file_name"].split(".")[-1].lower()
+            file_name = f"image_{(idx+1):08}.{file_ext}"
+            return f"{data_url['base_url']}{file_name}?{data_url['query']}"
 
     def get_frame_urls(self):
         self._describe_data_detail()
@@ -52,8 +55,13 @@ class VideoDataHandle(DataHandle):
             return None
 
         data_url = json.loads(self._data.data_url)
-        for frame_idx in range(len(data_url["file_infos"])):
-            yield self.get_frame_url(frame_idx, data_url)
+        
+        if type(data_url) is list:
+            for frame_idx in range(len(data_url)):
+                yield self.get_frame_url(frame_idx, data_url)
+        else:
+            for frame_idx in range(len(data_url["file_infos"])):
+                yield self.get_frame_url(frame_idx, data_url)
 
     def get_frame(self, idx):
         return self.get_frame_url(idx)
@@ -84,13 +92,34 @@ class VideoDataHandle(DataHandle):
             print("[INFO] Downloaded to {}".format(download_to))
 
         data_url = json.loads(self._data.data_url)
-        for frame_idx, file_info in enumerate(data_url["file_infos"]):
-            url = self.get_frame_url(frame_idx, data_url)
-            retrieve_file(
-                url=url,
-                file_path=os.path.join(download_to, file_info["file_name"])
-            )
+        
+        if type(data_url) is list:
+            for frame_idx in range(len(data_url)):
+                url = self.get_frame_url(frame_idx, data_url)
+                try:
+                    parts = url.split("://", 1)
+                    if len(parts) < 2:
+                        raise ValueError("Invalid URL format: missing '://' separator")
 
+                    path_parts = parts[1].split("/", 2)
+                    if len(path_parts) < 3:
+                        raise ValueError("Invalid URL format: insufficient '/' parts for path extraction")
+
+                    url_path = path_parts[2].split("?", 1)[0]
+
+                except ValueError as e:
+                    raise ValueError("Invalid URL format")
+                retrieve_file(
+                    url=url,
+                    file_path=os.path.join(download_to, url_path)
+                )
+        else:
+            for frame_idx, file_info in enumerate(data_url["file_infos"]):
+                url = self.get_frame_url(frame_idx, data_url)
+                retrieve_file(
+                    url=url,
+                    file_path=os.path.join(download_to, file_info["file_name"])
+                )
         return True
 
     def get_frames(self):
