@@ -153,7 +153,7 @@ class APILimitExceededException(APIException):
 
 
 class APIUnknownException(APIException):
-    def __init__(self, message, code="002500"):
+    def __init__(self, message="Unknown API error", code="002500"):
         super().__init__(message, code)
         # self.logger.error(message, code)
 
